@@ -12,17 +12,20 @@ class Layer:
             weights = np.array(weights)
 
         self.weights = weights
-        self.n_neurons = self.get_n_neurons()
+        self.n_neurons = self.weights.shape[0]
         self.function = function
         # possible
         self.functions = [function for i in range(self.n_neurons)]
 
     def compute(self, args):
+        if type(args) is list:
+            args = np.array(args)
         if self.weights.shape[1] != args.shape[0]:
             return None
         result = np.matmul(self.weights, args)
         # if type(self.functions) is list: ...
-        return np.vectorize(self.function)(result)
+        f = np.vectorize(self.function)
+        return f(result)
 
     def get_n_neurons(self):
         return self.n_neurons
@@ -82,7 +85,7 @@ class Net:
 
         n_layers = weights.shape[0]
 
-        if len(functions) == 1:
+        if len(functions) == 1 and n_layers > 1:
             functions = [functions for i in range(n_layers)]
 
         # creating layers
