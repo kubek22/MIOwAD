@@ -1,102 +1,110 @@
 import numpy as np
 
 
-class Layer:
-    def __init__(self, function, weights):
-        """
-        weights as matrix
-        one function for all layer
-        """
-
-        if type(weights) is list:
-            weights = np.array(weights)
-
-        self.weights = weights
-        self.n_neurons = self.weights.shape[0]
-        self.function = function
-        # possible
-        self.functions = [function for i in range(self.n_neurons)]
-
-    def compute(self, args):
-        if type(args) is list:
-            args = np.array(args)
-        if self.weights.shape[1] != args.shape[0]:
-            return None
-        result = np.matmul(self.weights, args)
-        # if type(self.functions) is list: ...
-        f = np.vectorize(self.function)
-        return f(result)
-
-    def get_n_neurons(self):
-        return self.n_neurons
-
-    def get_weights(self):
-        return self.weights
-
-    def get_weight(self, neuron_index):
-        return self.weights[neuron_index] if neuron_index < self.get_n_neurons() else None
-
-    def get_functions(self):
-        return self.functions
-
-    def get_function(self, neuron_index):
-        return self.functions[neuron_index] if neuron_index < self.get_n_neurons() else None
-
-    def get_n_inputs(self):
-        return self.weights.shape[1]
-
-    def set_function(self, function):
-        self.function = function
-
-    def set_weights(self, weights):
-        if weights.shape[0] != self.get_n_neurons():
-            return None
-        self.weights = weights
-
-    def are_next_weights_correct(self, weights):
-        if weights.shape[1] != self.get_n_neurons():
-            return False
-        return True
-
-    def set_neuron_weights(self, neuron_index, weights):
-        if self.weights.shape[1] != weights.shape[0]:
-            return None
-        if not neuron_index < self.get_n_neurons():
-            return None
-        self.weights[neuron_index, :] = weights
-
-    def change_neuron_weight(self, neuron_index, ancestor_index, weight):
-        if not neuron_index < self.get_n_neurons():
-            return None
-        if not ancestor_index < self.weights.shape[1]:
-            return None
-        self.weights[neuron_index, ancestor_index] = weight
-
-    def set_n_neurons(self, n_neurons):
-        self.n_neurons = n_neurons
-
-
 class Net:
-    def __init__(self, weights, functions):
+    class Layer:
+        def __init__(self, function, weights, bias=0):
+            """
+            weights as matrix
+            one function for all layer
+            """
+
+            if type(weights) is list:
+                weights = np.array(weights)
+
+            self.weights = weights
+            self.n_neurons = self.weights.shape[0]
+            self.function = function
+            # possible (not needed)
+            self.functions = [function for _ in range(self.n_neurons)]
+            self.bias = bias
+
+        def compute(self, args, bias):
+            if type(args) is int or type(args) is float:
+                args = [args]
+            if type(args) is list:
+                args = np.array(args)
+            if self.weights.shape[1] != args.shape[0]:
+                return None
+            result = np.matmul(self.weights, args)
+            result += bias
+            # if type(self.functions) is list: ...
+            f = np.vectorize(self.function)
+            return f(result)
+
+        def get_n_neurons(self):
+            return self.n_neurons
+
+        def get_weights(self):
+            return self.weights
+
+        def get_weight(self, neuron_index):
+            return self.weights[neuron_index] if neuron_index < self.get_n_neurons() else None
+
+        def get_functions(self):
+            return self.functions
+
+        def get_function(self, neuron_index):
+            return self.functions[neuron_index] if neuron_index < self.get_n_neurons() else None
+
+        def get_n_inputs(self):
+            return self.weights.shape[1]
+
+        def get_bias(self):
+            return self.bias
+
+        def set_function(self, function):
+            self.function = function
+
+        def set_weights(self, weights):
+            if weights.shape[0] != self.get_n_neurons():
+                raise ValueError('Wrong weights dimension')
+            self.weights = weights
+
+        def are_next_weights_correct(self, weights):
+            if weights.shape[1] != self.get_n_neurons():
+                return False
+            return True
+
+        def set_neuron_weights(self, neuron_index, weights):
+            if self.weights.shape[1] != weights.shape[0]:
+                raise ValueError('Wrong weights length')
+            if not neuron_index < self.get_n_neurons():
+                raise IndexError('Wrong neuron index')
+            self.weights[neuron_index, :] = weights
+
+        def set_neuron_weight(self, neuron_index, ancestor_index, weight):
+            if not neuron_index < self.get_n_neurons():
+                raise IndexError('Wrong neuron index')
+            if not ancestor_index < self.weights.shape[1]:
+                raise IndexError('Wrong ancestor index')
+            self.weights[neuron_index, ancestor_index] = weight
+
+        def set_n_neurons(self, n_neurons):
+            self.n_neurons = n_neurons
+
+    def __init__(self, weights, functions, biases=None):
         """
         weights - list of matrices [layer, node, ancestor]
         functions - list of functions, one per layer
         """
 
-        n_layers = weights.shape[0]
+        n_layers = len(weights)
+        if biases is None:
+            biases = [0 for _ in range(n_layers)]
 
         if len(functions) == 1 and n_layers > 1:
-            functions = [functions for i in range(n_layers)]
+            functions = [functions for _ in range(n_layers)]
+        self.layers = [self.Layer(functions[i], weights[i], biases[i]) for i in range(n_layers)]
 
-        # creating layers
-        self.layers = [Layer(functions[i], weights[i]) for i in range(n_layers)]
-
-    def compute(self, args):
-        """returns None in case of dimension problems"""
+    def predict(self, args, bias=0):
         for layer in self.layers:
-            args = layer.compute(args)
+            args = layer.compute(args, bias)
+            bias = layer.get_bias()
             if args is None:
-                return None
+                raise Exception
+        if len(args) == 1:
+            args = args[0]
         return args
 
     def get_n_layers(self):
@@ -106,7 +114,7 @@ class Net:
         return [layer.get_weights() for layer in self.layers]
 
     def get_layer_weights(self, layer_index):
-        return self.layers[layer_index] if layer_index < self.get_n_layers() else None
+        return self.layers[layer_index].get_weights() if layer_index < self.get_n_layers() else None
 
     def get_weight(self, layer_index, neuron_index):
         return self.layers[layer_index].get_weight(neuron_index) if layer_index < self.get_n_layers() else None
@@ -125,7 +133,7 @@ class Net:
 
     def set_all_functions(self, functions):
         if len(functions) != self.get_n_layers():
-            return None
+            raise ValueError('Wrong number of functions')
         for layer, function in zip(self.layers, functions):
             layer.set_function(function)
 
@@ -134,19 +142,20 @@ class Net:
 
     def set_layer_weights(self, layer_index, weights):
         if not layer_index < self.get_n_layers():
-            return None
+            raise IndexError('Wrong layer index')
 
         if type(weights) is list:
             weights = np.array(weights)
 
         layer = self.layers[layer_index]
         if layer_index == 0:
-            # first layer
+            if self.get_n_inputs() != weights.shape[1]:
+                raise ValueError('weights dimension is not coherent with inputs number')
             layer.set_weights(weights)
             return
         prev_layer = self.layers[layer_index - 1]
         if not prev_layer.are_next_weights_correct(weights):
-            return None
+            raise ValueError('Wrong weights dimension')
         layer.set_weights(weights)
 
     def set_neuron_weights(self, layer_index, neuron_index, weights):
@@ -155,20 +164,21 @@ class Net:
         if layer_index < self.get_n_layers():
             self.layers[layer_index].set_neuron_weights(neuron_index, weights)
 
-    def change_neuron_weight(self, layer_index, neuron_index, ancestor_index, weight):
-        if layer_index < self.get_n_layers():
-            return None
-        self.layers[layer_index].change_neuron_weight(neuron_index, ancestor_index, weight)
+    def set_neuron_weight(self, layer_index, neuron_index, ancestor_index, weight):
+        if not layer_index < self.get_n_layers():
+            raise IndexError('Wrong layer index')
+        self.layers[layer_index].set_neuron_weight(neuron_index, ancestor_index, weight)
 
-    def change_neurons_number(self, layer_index, n_neurons, weights, next_weights):
-        if layer_index < self.get_n_layers():
-            return None
+    def set_neurons_number(self, layer_index, n_neurons, weights, next_weights=None):
+        """enables changing number of neurons on the layer and setting weights"""
+        if not layer_index < self.get_n_layers():
+            raise IndexError('Wrong layer index')
         if n_neurons < 1:
-            return None
-        self.set_layer_weights(layer_index, weights)
+            raise ValueError('Wrong number of neurons')
+        if next_weights is None and layer_index != self.get_n_layers() - 1:
+            return AttributeError('Attribute next_weights is essential for this layer')
         self.layers[layer_index].set_n_neurons(n_neurons)
+        self.set_layer_weights(layer_index, weights)
         if layer_index == self.get_n_layers() - 1:
             return
-        self.layers[layer_index + 1].set_weights(next_weights)
-
-
+        self.set_layer_weights(layer_index + 1, next_weights)
