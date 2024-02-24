@@ -11,15 +11,16 @@ class Net:
 
             if type(weights) is list:
                 weights = np.array(weights)
-
             self.weights = weights
             self.n_neurons = self.weights.shape[0]
             self.function = function
             # possible (not needed)
             self.functions = [function for _ in range(self.n_neurons)]
+            if type(bias) is list:
+                bias = np.array(bias)
             self.bias = bias
 
-        def compute(self, args, bias):
+        def compute(self, args):
             if type(args) is int or type(args) is float:
                 args = [args]
             if type(args) is list:
@@ -27,10 +28,11 @@ class Net:
             if self.weights.shape[1] != args.shape[0]:
                 return None
             result = np.matmul(self.weights, args)
-            result += bias
+            result += self.bias
             # if type(self.functions) is list: ...
             f = np.vectorize(self.function)
-            return f(result)
+            result = f(result)
+            return result
 
         def get_n_neurons(self):
             return self.n_neurons
@@ -97,10 +99,9 @@ class Net:
             functions = [functions for _ in range(n_layers)]
         self.layers = [self.Layer(functions[i], weights[i], biases[i]) for i in range(n_layers)]
 
-    def predict(self, args, bias=0):
+    def predict(self, args):
         for layer in self.layers:
-            args = layer.compute(args, bias)
-            bias = layer.get_bias()
+            args = layer.compute(args)
             if args is None:
                 raise Exception
         if len(args) == 1:
@@ -130,6 +131,9 @@ class Net:
 
     def get_n_inputs(self):
         return self.layers[0].get_n_inputs()
+    
+    def get_all_biases(self):
+        return [layer.get_bias() for layer in self.layers]
 
     def set_all_functions(self, functions):
         if len(functions) != self.get_n_layers():
