@@ -28,7 +28,7 @@ class Net:
             if self.weights.shape[1] != args.shape[0]:
                 return None
             result = np.matmul(self.weights, args)
-            result += self.bias
+            result = result + self.bias
             # if type(self.functions) is list: ...
             f = np.vectorize(self.function)
             result = f(result)
@@ -57,6 +57,9 @@ class Net:
 
         def set_function(self, function):
             self.function = function
+
+        def set_bias(self, bias):
+            self.bias = bias
 
         def set_weights(self, weights):
             if weights.shape[0] != self.get_n_neurons():
@@ -173,16 +176,20 @@ class Net:
             raise IndexError('Wrong layer index')
         self.layers[layer_index].set_neuron_weight(neuron_index, ancestor_index, weight)
 
-    def set_neurons_number(self, layer_index, n_neurons, weights, next_weights=None):
+    def set_neurons_number(self, layer_index, n_neurons, weights, bias, next_weights=None):
         """enables changing number of neurons on the layer and setting weights"""
         if not layer_index < self.get_n_layers():
             raise IndexError('Wrong layer index')
         if n_neurons < 1:
             raise ValueError('Wrong number of neurons')
+        if not (type(bias) is int or type(bias) is float):
+            if len(bias) != n_neurons:
+                raise ValueError('Wrong bias length')
         if next_weights is None and layer_index != self.get_n_layers() - 1:
             return AttributeError('Attribute next_weights is essential for this layer')
         self.layers[layer_index].set_n_neurons(n_neurons)
         self.set_layer_weights(layer_index, weights)
+        self.layers[layer_index].set_bias(bias)
         if layer_index == self.get_n_layers() - 1:
             return
         self.set_layer_weights(layer_index + 1, next_weights)

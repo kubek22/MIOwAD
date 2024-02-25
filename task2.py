@@ -33,22 +33,28 @@ plt.show()
 
 #%%
 def sigma(x):
-    return 1 / (1 + math.e ** ((-1) * x))
+    if x > 0:
+        return 1 / (1 + math.e ** ((-1) * x))
+    return math.e ** x / (1 + math.e ** x)
 
 def MSE(x, y):
     return sum((x - y) ** 2) / len(x)
 
-#%%
+#%% simple test
 
-w0 = np.array([[1], [1], [1], [1], [1]]) * 2
-w1 = np.array([[-80, 50, 50, 50, 50]]) * 1.5
+k = 1000  # as much as possible
 
-w = [w0, w1]
+# 3 detections of levels + linear shift
+w = [
+      [[1 * k], [1 * k], [1 * k], [-1], [1]],
+      [[80, 80, 80, -80, -80]]
+      ]
 
-b0 = np.array([10, 0.5, -0.5, -1.5, 0])
-b1 = 0
+biases = [
+    [-0.5 * k, -1.5 * k, 0.5 * k, 0, 0],
+    [0]
+    ]
 
-biases = [b0, b1]
 
 net = Net(w, [sigma, lambda x: x], biases)
 
@@ -74,11 +80,12 @@ for x in x_test:
 predictions
 
 
-# plt.plot(x_test, y_test, 'o')
-# plt.plot(x_test, predictions, 'o')
-# plt.show()
+plt.plot(x_test, y_test, 'o')
+plt.plot(x_test, predictions, 'o')
+plt.show()
 
 print(MSE(predictions, y_test))
 
-# print(net.get_all_weights())
-# print(net.get_all_biases())
+print(net.get_all_weights())
+print(net.get_all_biases())
+
