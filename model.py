@@ -15,7 +15,7 @@ class Net:
             self.n_neurons = self.weights.shape[0]
             self.function = function
             # possible (not needed)
-            self.functions = [function for _ in range(self.n_neurons)]
+            # self.functions = [function for _ in range(self.n_neurons)]
             if type(bias) is list:
                 bias = np.array(bias)
             self.bias = bias
@@ -42,12 +42,15 @@ class Net:
 
         def get_weight(self, neuron_index):
             return self.weights[neuron_index] if neuron_index < self.get_n_neurons() else None
+        
+        def get_function(self):
+            return self.function
+            
+        # def get_functions(self):
+        #     return self.functions
 
-        def get_functions(self):
-            return self.functions
-
-        def get_function(self, neuron_index):
-            return self.functions[neuron_index] if neuron_index < self.get_n_neurons() else None
+        # def get_function(self, neuron_index):
+        #     return self.functions[neuron_index] if neuron_index < self.get_n_neurons() else None
 
         def get_n_inputs(self):
             return self.weights.shape[1]
@@ -124,13 +127,13 @@ class Net:
         return self.layers[layer_index].get_weight(neuron_index) if layer_index < self.get_n_layers() else None
 
     def get_all_functions(self):
-        return [layer.get_functions() for layer in self.layers]
+        return [layer.get_function() for layer in self.layers]
 
-    def get_layer_functions(self, layer_index):
-        return self.layers[layer_index].get_functions() if layer_index < self.get_n_layers() else None
+    def get_layer_function(self, layer_index):
+        return self.layers[layer_index].get_function() if layer_index < self.get_n_layers() else None
 
-    def get_function(self, layer_index, neuron_index):
-        return self.layers[layer_index].get_function(neuron_index) if layer_index < self.get_n_layers() else None
+    # def get_function(self, layer_index, neuron_index):
+    #     return self.layers[layer_index].get_function(neuron_index) if layer_index < self.get_n_layers() else None
 
     def get_n_inputs(self):
         return self.layers[0].get_n_inputs()
