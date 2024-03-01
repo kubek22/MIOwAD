@@ -35,3 +35,5 @@ df_dx = grad(sigma)
 df_dx(0.0)
 df_dx(1.0)
 df_dx(-1.0)
+
+

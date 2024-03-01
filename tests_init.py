@@ -49,4 +49,55 @@ scales = np.array([1, 1])
 shifts = - scales
 scales *= 2
 
+#%%
+
+y = np.array([1, 2])
+y
+np.array(y)
+
+#%%
+
+e = np.array([1, 2, 3])
+W = np.array([[1, 2],
+              [1, 2],
+              [1, 2]])
+np.matmul(e, W)
+
+#%%
+n=3
+for i in range(n-2, -1, -1):
+    print(i)
+    
+#%%
+
+x = np.array([[1, 2, 3]])
+np.matmul(x, x)
+x
+np.transpose(x)
+
+np.matmul(x, np.transpose(x))
+
+np.matmul(np.transpose(x), x)
+
+a = np.array([1, 2, 3])
+a
+
+np.matmul(np.transpose(x), a)
+
+np.array(a)
+np.array([a])
+
+#%%
+
+df = [[1, 2, 3] for i in range(5)]
+df
+
+df[0:4]
+df[4:7]
+
+df = np.array(df)
+df
+
+df[0:4]
+df[4:8]
 
