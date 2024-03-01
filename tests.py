@@ -45,16 +45,9 @@ net2.predict([1, 2])
 
 net2.get_all_functions()
 net2.get_all_weights()
-net2.get_function(0, 0)
-net2.get_function(0, 1)
-net2.get_function(0, 2)
+net2.get_layer_function(0)
 
-net2.get_function(1, 0)
-net2.get_function(1, 1)
-
-net2.get_layer_functions(0)
-net2.get_layer_functions(1)
-net2.get_layer_functions(2)
+net2.get_layer_function(1)
 
 net2.get_layer_weights(0)
 net2.get_layer_weights(1)
@@ -113,12 +106,12 @@ net2.predict([1, 2])
 net2.set_neurons_number(0, 1, [[1, 1]])
 net2.get_all_weights()
 
-net2.set_neurons_number(0, 1, [[1, 1]], [[1], [1]])
+net2.set_neurons_number(0, 1, [[1, 1]], next_weights=[[1], [1]])
 net2.get_all_weights()
 net2.predict([1, 2])
 
 net2.set_all_functions([lambda x: x] * 2)
 net2.predict([1, 2])
 
-net2.set_neurons_number(4, 1, [[1, 1]], [[1], [1]])
+net2.set_neurons_number(4, 1, [[1, 1]], next_weights=[[1], [1]])
 

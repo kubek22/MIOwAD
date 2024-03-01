@@ -1,11 +1,10 @@
 #%%
+
 import numpy as np
 from pandas import read_csv
 import matplotlib.pyplot as plt
 from model import Net
 import math
-from numpy import array
-
 
 #%% steps-large
 
@@ -21,8 +20,8 @@ df_test.head()
 x_test = df_test["x"]
 y_test = df_test["y"]
 
-
 #%%
+
 plt.plot(x_train, y_train, 'o')
 plt.show()
 
@@ -32,6 +31,7 @@ plt.plot(x_test, y_test, 'o')
 plt.show()
 
 #%%
+
 def sigma(x):
     if x > 0:
         return 1 / (1 + math.e ** ((-1) * x))
@@ -40,7 +40,7 @@ def sigma(x):
 def MSE(x, y):
     return sum((x - y) ** 2) / len(x)
 
-#%% simple test
+#%%
 
 k = 1000  # as much as possible
 

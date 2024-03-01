@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 
 class Net:
@@ -19,6 +20,7 @@ class Net:
             if type(bias) is list:
                 bias = np.array(bias)
             self.bias = bias
+            self.__args = None
 
         def compute(self, args):
             if type(args) is int or type(args) is float:
@@ -27,6 +29,7 @@ class Net:
                 args = np.array(args)
             if self.weights.shape[1] != args.shape[0]:
                 return None
+            self.__args = args
             result = np.matmul(self.weights, args)
             result = result + self.bias
             # if type(self.functions) is list: ...
@@ -42,10 +45,10 @@ class Net:
 
         def get_weight(self, neuron_index):
             return self.weights[neuron_index] if neuron_index < self.get_n_neurons() else None
-        
+
         def get_function(self):
             return self.function
-            
+
         # def get_functions(self):
         #     return self.functions
 
@@ -62,6 +65,8 @@ class Net:
             self.function = function
 
         def set_bias(self, bias):
+            if type(bias) is list:
+                bias = np.array(bias)
             self.bias = bias
 
         def set_weights(self, weights):
@@ -91,12 +96,26 @@ class Net:
         def set_n_neurons(self, n_neurons):
             self.n_neurons = n_neurons
 
-    def __init__(self, weights, functions, biases=None):
+    def __init__(self, weights=None, functions=None, biases=None, n_neurons=None, n_inputs=None, param_init=None):
         """
+        n_neurons - list with numbers of neurons
         weights - list of matrices [layer, node, ancestor]
         functions - list of functions, one per layer
         """
+        if functions is None:
+            raise ValueError('Functions parameter missing')
+        if weights is not None:
+            self.__initialize(weights, functions, biases)
+            return
+        if n_neurons is None or n_inputs is None:
+            raise ValueError('Wrong arguments given')
+        if param_init is None:
+            weights, biases = self.__random_weights(n_neurons, n_inputs)
+        if param_init == 'xavier':
+            weights, biases = self.__xavier_weights(n_neurons, n_inputs)
+        self.__initialize(weights, functions, biases)
 
+    def __initialize(self, weights, functions, biases=None):
         n_layers = len(weights)
         if biases is None:
             biases = [0 for _ in range(n_layers)]
@@ -104,6 +123,29 @@ class Net:
         if len(functions) == 1 and n_layers > 1:
             functions = [functions for _ in range(n_layers)]
         self.layers = [self.Layer(functions[i], weights[i], biases[i]) for i in range(n_layers)]
+
+    def __random_weights(self, n_neurons, n_inputs, scales=None, shifts=None):
+        n_layers = len(n_neurons)
+        weights = [None for _ in range(n_layers)]
+        weights[0] = np.random.rand(n_neurons[0], n_inputs)
+        for i in range(1, n_layers):
+            weights[i] = np.random.rand(n_neurons[i], n_neurons[i - 1])
+        biases = [np.random.rand(n) for n in n_neurons]
+        if scales is not None and shifts is not None:
+            for i in range(n_layers):
+                weights[i] = weights[i] * scales[i] + shifts[i]
+        return weights, biases
+
+    def __xavier_weights(self, n_neurons, n_inputs):
+        n_layers = len(n_neurons)
+        scales = np.ones(n_layers)
+        scales[0] /= math.sqrt(n_inputs + n_neurons[0])
+        for i in range(1, n_layers):
+            scales[i] /= math.sqrt(n_neurons[i - 1] + n_neurons[i])
+        scales *= math.sqrt(6)
+        shifts = - scales
+        scales *= 2
+        return self.__random_weights(n_neurons, n_inputs, scales, shifts)
 
     def predict(self, args):
         for layer in self.layers:
@@ -137,7 +179,7 @@ class Net:
 
     def get_n_inputs(self):
         return self.layers[0].get_n_inputs()
-    
+
     def get_all_biases(self):
         return [layer.get_bias() for layer in self.layers]
 
@@ -179,7 +221,7 @@ class Net:
             raise IndexError('Wrong layer index')
         self.layers[layer_index].set_neuron_weight(neuron_index, ancestor_index, weight)
 
-    def set_neurons_number(self, layer_index, n_neurons, weights, bias, next_weights=None):
+    def set_neurons_number(self, layer_index, n_neurons, weights, bias=0, next_weights=None):
         """enables changing number of neurons on the layer and setting weights"""
         if not layer_index < self.get_n_layers():
             raise IndexError('Wrong layer index')
