@@ -1,5 +1,6 @@
 import math
 from autograd import grad
+import numpy as np
 
 def f(x):
     return x**2 + 3*x + 2
@@ -36,4 +37,9 @@ df_dx(0.0)
 df_dx(1.0)
 df_dx(-1.0)
 
+#%%
+
+f = np.vectorize(grad(sigma))
+
+f(0.0)
 

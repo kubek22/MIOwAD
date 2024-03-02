@@ -15,7 +15,7 @@ class Net:
                 weights = np.array(weights)
             self.weights = weights
             self.n_neurons = self.weights.shape[0]
-            self.function = function
+            self.function = np.vectorize(function)
             self.df_dx = np.vectorize(grad(function))
             # possible (not needed)
             # self.functions = [function for _ in range(self.n_neurons)]
@@ -24,20 +24,19 @@ class Net:
             self.bias = bias
             self.args = None
 
-        def compute(self, args):
+        def compute(self, args, save_args=False):
             if type(args) is int or type(args) is float:
                 args = [args]
             if type(args) is list:
                 args = np.array(args)
             if self.weights.shape[1] != args.shape[0]:
                 return None
-            self.args = args
             result = np.matmul(self.weights, args)
             result = result + self.bias
+            if save_args:
+                self.args = result
             # if type(self.functions) is list: ...
-            f = np.vectorize(self.function)
-            result = f(result)
-            return result
+            return self.function(result)
 
         def get_n_neurons(self):
             return self.n_neurons
@@ -64,7 +63,7 @@ class Net:
             return self.bias
 
         def set_function(self, function):
-            self.function = function
+            self.function = np.vectorize(function)
             self.df_dx = np.vectorize(grad(function))
 
         def set_bias(self, bias):
@@ -159,9 +158,9 @@ class Net:
         weights, _ = self.__random_weights(n_neurons, n_inputs, scales, shifts)
         return weights
 
-    def predict(self, args):
+    def predict(self, args, save_args=False):
         for layer in self.layers:
-            args = layer.compute(args)
+            args = layer.compute(args, save_args)
             if args is None:
                 raise Exception
         if len(args) == 1:
@@ -169,11 +168,13 @@ class Net:
         return args
 
     def fit(self, x_train, y_train, batch_size, epochs, alpha):
+        x_train = np.array(x_train)
+        y_train = np.array(y_train)
         n = len(x_train)
         # optionally shuffle data
         for _ in range(epochs):
             i = 0
-            while i < n:
+            while i * batch_size < n:
                 lb = i * batch_size
                 ub = lb + batch_size
                 self.mini_batch(x_train[lb: ub], y_train[lb: ub], alpha)
@@ -181,9 +182,15 @@ class Net:
 
     def mini_batch(self, x_batch, y_batch, alpha):
         n = len(x_batch)
+        x_flat = False
+        y_flat = False
+        if len(x_batch.shape) == 1:
+            x_flat = True
+        if len(y_batch.shape) == 1:
+            y_flat = True
         delta_weights = self.__zero_weights()
         for x, y in zip(x_batch, y_batch):
-            dw = self.back_propagate(x, y, alpha)
+            dw = self.back_propagate([x] if x_flat else x, [y] if y_flat else y, alpha)
             for weights, w in zip(delta_weights, dw):
                 weights += w
         model_weights = self.get_all_weights()
@@ -195,22 +202,19 @@ class Net:
     def back_propagate(self, x, y, alpha):
         n = self.get_n_layers()
         delta_weights = [0 for i in range(n)]
-        x = np.array(x)
-        y = np.array(y)
-        y_pred = self.predict(x)
+        y_pred = self.predict(x, save_args=True)
         errors = [0 for i in range(n)]
         last_layer = self.layers[-1]
         errors[-1] = last_layer.df_dx(last_layer.args) * (y_pred - y)
         for i in range(n-2, -1, -1):
             layer = self.layers[i]
+            next_layer = self.layers[i+1]
             prev_error = errors[i+1]
-            errors[i] = np.matmul(prev_error, layer.get_weights()) * layer.df_dx(layer.args)
-        first_layer = self.layers[0]
-        delta_weights[0] = np.matmul(np.transpose(np.array(errors[0])), np.array([first_layer.compute(x)])) * (-1) * alpha
+            errors[i] = np.matmul(prev_error, next_layer.get_weights()) * layer.df_dx(layer.args)
+        delta_weights[0] = np.matmul(np.transpose(np.array([errors[0]])), np.array([x])) * (-1) * alpha
         for i in range(1, n):
             prev_layer = self.layers[i-1]
-            delta_weights[i] = np.matmul(np.transpose(np.array(errors[i])), np.array([prev_layer.compute(prev_layer.args)])) * (
-                -1) * alpha
+            delta_weights[i] = np.matmul(np.transpose(np.array([errors[i]])), np.array([prev_layer.function(prev_layer.args)])) * (-1) * alpha
         return delta_weights
 
     def get_n_layers(self):
