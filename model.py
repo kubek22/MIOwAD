@@ -189,15 +189,22 @@ class Net:
         if len(y_batch.shape) == 1:
             y_flat = True
         delta_weights = self.__zero_weights()
+        delta_biases = [np.zeros(layer.get_n_neurons()) for layer in self.layers]
         for x, y in zip(x_batch, y_batch):
-            dw = self.back_propagate([x] if x_flat else x, [y] if y_flat else y, alpha)
+            dw, db = self.back_propagate([x] if x_flat else x, [y] if y_flat else y, alpha)
             for weights, w in zip(delta_weights, dw):
                 weights += w
-        model_weights = self.get_all_weights()
-        for weights, w in zip(model_weights, delta_weights):
-            weights += w / n
-        for layer, layer_weights in zip(self.layers, model_weights):
-            layer.set_weights(layer_weights)
+            for weights, w in zip(delta_biases, db):
+                weights += w
+        # model_weights = self.get_all_weights()
+        # for weights, w in zip(model_weights, delta_weights):
+        #     weights += w / n
+        # for layer, layer_weights in zip(self.layers, model_weights):
+        #     layer.set_weights(layer_weights)
+        for layer, dw in zip(self.layers, delta_weights):
+            layer.weights += dw / n
+        for layer, delta_bias in zip(self.layers, delta_biases):
+            layer.bias += delta_bias / n
 
     def back_propagate(self, x, y, alpha):
         n = self.get_n_layers()
@@ -215,7 +222,8 @@ class Net:
         for i in range(1, n):
             prev_layer = self.layers[i-1]
             delta_weights[i] = np.matmul(np.transpose(np.array([errors[i]])), np.array([prev_layer.function(prev_layer.args)])) * (-1) * alpha
-        return delta_weights
+        delta_biases = [e  * (-1) * alpha for e in errors]
+        return delta_weights, delta_biases
 
     def get_n_layers(self):
         return len(self.layers)

@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="edbc9381-c780-4120-baa5-88df010ab15c" name="Changes" comment="" />
+    <list default="true" id="edbc9381-c780-4120-baa5-88df010ab15c" name="Changes" comment="back propagation" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -13,12 +13,12 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "kubek22"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;kubek22&quot;
   }
-}]]></component>
+}</component>
   <component name="GithubPullRequestsUISettings">
     <option name="selectedUrlAndAccountId">
       <UrlAndAccount>
@@ -61,6 +61,7 @@
       <updated>1709199976738</updated>
       <workItem from="1709199979547" duration="637000" />
       <workItem from="1709298322203" duration="14195000" />
+      <workItem from="1709379527777" duration="2025000" />
     </task>
     <task id="LOCAL-00001" summary="initializing weights">
       <option name="closed" value="true" />
@@ -78,7 +79,15 @@
       <option name="project" value="LOCAL" />
       <updated>1709318424062</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="back propagation">
+      <option name="closed" value="true" />
+      <created>1709394283046</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1709394283046</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -87,6 +96,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="initializing weights" />
     <MESSAGE value="model fit implementation" />
-    <option name="LAST_COMMIT_MESSAGE" value="model fit implementation" />
+    <MESSAGE value="back propagation" />
+    <option name="LAST_COMMIT_MESSAGE" value="back propagation" />
   </component>
 </project>

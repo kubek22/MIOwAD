@@ -58,6 +58,33 @@ print(MSE(predictions, y_train))
 net.get_all_weights()
 
 #%%
+
+f = [sigma, lambda x: x]
+
+net = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
+
+net.fit(x_train, y_train, batch_size=10, epochs=100, alpha=1)
+net.fit(x_train, y_train, batch_size=10, epochs=100, alpha=0.5)
+net.fit(x_train, y_train, batch_size=10, epochs=100, alpha=0.1)
+net.fit(x_train, y_train, batch_size=10, epochs=100, alpha=0.05)
+net.fit(x_train, y_train, batch_size=10, epochs=1000, alpha=0.01)
+net.fit(x_train, y_train, batch_size=10, epochs=1000, alpha=0.005)
+
+predictions = []
+for x in x_train:
+    predictions.append(net.predict(x))
+    
+predictions
+
+plt.plot(x_train, y_train, 'o')
+plt.plot(x_train, predictions, 'o')
+plt.show()
+
+print(MSE(predictions, y_train))
+
+net.get_all_weights()
+
+#%%
 import pandas as pd
 
 X = pd.DataFrame([[1, 2], [3, 4]])
