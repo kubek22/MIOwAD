@@ -5,6 +5,20 @@ from pandas import read_csv
 import matplotlib.pyplot as plt
 from model import Net
 import math
+import pickle
+import time
+
+#%%
+
+def save(array, file_name):
+    file= open(file_name, 'wb')
+    pickle.dump(array, file)
+    file.close()
+
+def read(filename):
+    with open(filename, 'rb') as file:
+        array = pickle.load(file)
+    return array
 
 #%%
 
@@ -41,7 +55,21 @@ f = [sigma, lambda x: x]
 
 net = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-net.fit(x_train, y_train, batch_size=10, epochs=10000, alpha=0.003)
+#%%
+
+w = read("weights.txt")
+b = read("biases.txt")
+
+net = Net(weights=w, biases=b, functions=f)
+
+#%%
+
+start = time.time()
+net.fit(x_train, y_train, batch_size=8, epochs=100, alpha=0.001)
+end = time.time()
+print("Time elapsed: ", end - start)
+
+#%%
 
 predictions = []
 for x in x_train:
@@ -55,7 +83,12 @@ plt.show()
 
 print(MSE(predictions, y_train))
 
-net.get_all_weights()
+#%%
+
+save(net.get_all_weights(), "weights.txt")
+save(net.get_all_biases(), "biases.txt")
+
+
 
 #%%
 

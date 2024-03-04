@@ -171,7 +171,10 @@ class Net:
         x_train = np.array(x_train)
         y_train = np.array(y_train)
         n = len(x_train)
-        # optionally shuffle data
+        index = np.arange(n)
+        np.random.shuffle(index)
+        x_train = x_train[index]
+        y_train = y_train[index]
         for _ in range(epochs):
             i = 0
             while i * batch_size < n:

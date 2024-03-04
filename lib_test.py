@@ -20,6 +20,29 @@ y_test = df_test["y"]
 
 #%%
 
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(units=5, input_shape=(1,), activation='sigmoid'), # , use_bias=False
+    tf.keras.layers.Dense(units=1)  # Output layer with linear activation
+])
+
+# Compile the model
+model.compile(optimizer='sgd', loss='mean_squared_error')
+
+#%% train
+
+# Train the model
+model.fit(x_train, y_train, epochs=10000, verbose=0, use_multiprocessing=True)
+
+pred = model.predict(x_train)
+
+plt.plot(x_train, y_train, 'o')
+plt.plot(x_train, pred, 'o')
+plt.show()
+
+sum((np.transpose(pred)[0] - y_train) ** 2) / len(pred)
+
+#%%
+
 # Generate some example data
 x_train = np.linspace(-1.5, 2, 100).reshape(-1, 1)
 y_train = x_train ** 2
@@ -54,7 +77,6 @@ model.fit(x_train, y_train, epochs=3700, verbose=0)
 # print(weights_output)
 # print("Biases:")
 # print(biases_output)
-
 
 #%% train
 
