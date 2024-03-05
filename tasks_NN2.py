@@ -49,6 +49,17 @@ def MSE(x, y):
 plt.plot(x_train, y_train, 'o')
 plt.show()
 
+#%% scaling
+
+b = np.min(y_train)
+a = np.mean((y_train - b) / (x_train ** 2))
+
+#%%
+
+plt.plot(x_train, (y_train - b) / a, 'o')
+plt.show()
+
+
 #%%
 
 f = [sigma, lambda x: x]
@@ -57,37 +68,74 @@ net = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
 #%%
 
-w = read("weights.txt")
-b = read("biases.txt")
+# w = read("weights.txt")
+# b = read("biases.txt")
 
-net = Net(weights=w, biases=b, functions=f)
+# net = Net(weights=w, biases=b, functions=f)
 
 #%%
 
 start = time.time()
-net.fit(x_train, y_train, batch_size=8, epochs=100, alpha=0.001)
+net.fit(x_train, (y_train - b) / a, batch_size=16, epochs=10000, alpha=0.003)
 end = time.time()
 print("Time elapsed: ", end - start)
 
 #%%
 
 predictions = []
-for x in x_train:
+for x in x_test:
     predictions.append(net.predict(x))
     
-predictions
+predictions = np.array(predictions)
 
-plt.plot(x_train, y_train, 'o')
-plt.plot(x_train, predictions, 'o')
+predictions = predictions * a + b
+
+plt.plot(x_test, y_test, 'o')
+plt.plot(x_test, predictions, 'o')
 plt.show()
 
-print(MSE(predictions, y_train))
+print(MSE(predictions, y_test))
+
+#%% wartosci norm wag na warstwach
+
+#TODO
+
+#%%
+
+def count_MSE(net, x_test, y_test, a, b):
+    predictions = []
+    for x in x_test:
+        predictions.append(net.predict(x))
+    predictions = np.array(predictions)
+    predictions = predictions * a + b
+    return MSE(predictions, y_test)
+
+#%% convergence comparison
+
+f = [sigma, lambda x: x]
+net_GD = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
+net_SGD = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
+
+n = 1000
+epochs = np.arange(n)
+MSE_GD = []
+MSE_SGD = []
+for epoch in epochs:
+    net_GD.fit(x_train, (y_train - b) / a, batch_size=len(x_train), epochs=1, alpha=0.003)
+    net_SGD.fit(x_train, (y_train - b) / a, batch_size=1, epochs=1, alpha=0.003)
+    MSE_GD.append(count_MSE(net_GD, x_test, y_test, a, b))
+    MSE_SGD.append(count_MSE(net_SGD, x_test, y_test, a, b))
+
+plt.plot(epochs, MSE_GD, 'o')
+plt.plot(epochs, MSE_SGD, 'o')
+plt.legend(('GD', 'SGD'), loc='upper right')
+plt.show()
+    
 
 #%%
 
 save(net.get_all_weights(), "weights.txt")
 save(net.get_all_biases(), "biases.txt")
-
 
 
 #%%

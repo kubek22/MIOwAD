@@ -10,7 +10,6 @@ df_train.head()
 
 x_train = df_train["x"]
 y_train = df_train["y"]
-y = x_train ** 2
 
 df_test = read_csv("data/regression/square-simple-test.csv")
 df_test.head()
@@ -21,7 +20,8 @@ y_test = df_test["y"]
 #%%
 
 model = tf.keras.Sequential([
-    tf.keras.layers.Dense(units=5, input_shape=(1,), activation='sigmoid'), # , use_bias=False
+    tf.keras.layers.Dense(units=1, input_shape=(1,)),
+    tf.keras.layers.Dense(units=5, activation='sigmoid'), # , use_bias=False
     tf.keras.layers.Dense(units=1)  # Output layer with linear activation
 ])
 
@@ -31,7 +31,7 @@ model.compile(optimizer='sgd', loss='mean_squared_error')
 #%% train
 
 # Train the model
-model.fit(x_train, y_train, epochs=10000, verbose=0, use_multiprocessing=True)
+model.fit(x_train, y_train, epochs=1000, verbose=0, use_multiprocessing=True)
 
 pred = model.predict(x_train)
 
