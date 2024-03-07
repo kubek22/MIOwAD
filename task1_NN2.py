@@ -76,7 +76,7 @@ net = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 #%%
 
 start = time.time()
-net.fit(x_train, (y_train - b) / a, batch_size=16, epochs=10000, alpha=0.003)
+net.fit(x_train, (y_train - b) / a, batch_size=16, epochs=10000, alpha=0.003) # lower batch size
 end = time.time()
 print("Time elapsed: ", end - start)
 
@@ -98,7 +98,23 @@ print(MSE(predictions, y_test))
 
 #%% wartosci norm wag na warstwach
 
-#TODO
+def plot_weights(net, with_bias=True):
+    layers = []
+    norms = []
+    i = 0
+    for weights, biases in zip(net.get_all_weights(), net.get_all_biases()):
+        layers.append(i)
+        i += 1
+        if with_bias:
+            norms.append(np.linalg.norm(np.c_[weights, biases]))
+        else:
+            norms.append(np.linalg.norm(weights))
+    plt.plot(layers, norms, 'o')
+    plt.show()
+
+#%%
+
+plot_weights(net)
 
 #%%
 
