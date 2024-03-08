@@ -59,46 +59,32 @@ a = np.mean((y_train - b) / (x_train ** 2))
 plt.plot(x_train, (y_train - b) / a, 'o')
 plt.show()
 
-
 #%%
 
-f = [sigma, lambda x: x]
+def count_MSE(net, x_test, y_test, a, b):
+    predictions = []
+    for x in x_test:
+        predictions.append(net.predict(x))
+    predictions = np.array(predictions)
+    predictions = predictions * a + b
+    return MSE(predictions, y_test)
 
-net = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
+def plot_weights_in_time(net, with_bias=True):
+    layers = []
+    norms = []
 
-#%%
-
-# w = read("weights.txt")
-# b = read("biases.txt")
-
-# net = Net(weights=w, biases=b, functions=f)
-
-#%%
-
-start = time.time()
-net.fit(x_train, (y_train - b) / a, batch_size=16, epochs=10000, alpha=0.003) # lower batch size
-end = time.time()
-print("Time elapsed: ", end - start)
-
-#%%
-
-predictions = []
-for x in x_test:
-    predictions.append(net.predict(x))
+    i = 0
+    for weights, biases in zip(net.get_all_weights(), net.get_all_biases()):
+        layers.append(i)
+        i += 1
+        if with_bias:
+            norms.append(np.linalg.norm(np.c_[weights, biases]))
+        else:
+            norms.append(np.linalg.norm(weights))
+    plt.plot(layers, norms, 'o')
+    plt.show()
     
-predictions = np.array(predictions)
-
-predictions = predictions * a + b
-
-plt.plot(x_test, y_test, 'o')
-plt.plot(x_test, predictions, 'o')
-plt.show()
-
-print(MSE(predictions, y_test))
-
-#%% wartosci norm wag na warstwach
-
-def plot_weights(net, with_bias=True):
+def plot_weights_on_layers(net, with_bias=True):
     layers = []
     norms = []
     i = 0
@@ -110,108 +96,88 @@ def plot_weights(net, with_bias=True):
         else:
             norms.append(np.linalg.norm(weights))
     plt.plot(layers, norms, 'o')
+    plt.xlabel('layer')
+    plt.ylabel('Frobenius norm')
     plt.show()
 
-#%%
+#%% GD and SGD comparison
 
-plot_weights(net)
-
-#%%
-
-def count_MSE(net, x_test, y_test, a, b):
-    predictions = []
-    for x in x_test:
-        predictions.append(net.predict(x))
-    predictions = np.array(predictions)
-    predictions = predictions * a + b
-    return MSE(predictions, y_test)
-
-#%% convergence comparison
+start = time.time()
 
 f = [sigma, lambda x: x]
 net_GD = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 net_SGD = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-n = 1000
-epochs = np.arange(n)
+epoch = 1
+epochs = []
 MSE_GD = []
 MSE_SGD = []
-for epoch in epochs:
+current_MSE_SGD = math.inf
+norms = [[] for _ in range(net_SGD.get_n_layers())]
+
+while current_MSE_SGD > 4:
+    epochs.append(epoch)
+    epoch += 1
     net_GD.fit(x_train, (y_train - b) / a, batch_size=len(x_train), epochs=1, alpha=0.003)
     net_SGD.fit(x_train, (y_train - b) / a, batch_size=1, epochs=1, alpha=0.003)
     MSE_GD.append(count_MSE(net_GD, x_test, y_test, a, b))
-    MSE_SGD.append(count_MSE(net_SGD, x_test, y_test, a, b))
+    current_MSE_SGD = count_MSE(net_SGD, x_test, y_test, a, b)
+    MSE_SGD.append(current_MSE_SGD)
+    for norm, weights, biases in zip(norms, net_SGD.get_all_weights(), net_SGD.get_all_biases()):
+        norm.append(np.linalg.norm(np.c_[weights, biases]))
+        
+end = time.time()
+
+#%% results
 
 plt.plot(epochs, MSE_GD, 'o')
 plt.plot(epochs, MSE_SGD, 'o')
 plt.legend(('GD', 'SGD'), loc='upper right')
+plt.xlabel('epoch')
+plt.ylabel('MSE')
+plt.show()
+
+for norm in norms:
+    plt.plot(epochs, norm, 'o')
+plt.legend(('layer 1', 'layer 2'), loc='upper left')
+plt.xlabel('epoch')
+plt.ylabel('Frobenius norm')
 plt.show()
     
-
-#%%
-
-save(net.get_all_weights(), "weights.txt")
-save(net.get_all_biases(), "biases.txt")
-
-
-#%%
-
-f = [sigma, lambda x: x]
-
-net = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
-
-net.fit(x_train, y_train, batch_size=10, epochs=100, alpha=1)
-net.fit(x_train, y_train, batch_size=10, epochs=100, alpha=0.5)
-net.fit(x_train, y_train, batch_size=10, epochs=100, alpha=0.1)
-net.fit(x_train, y_train, batch_size=10, epochs=100, alpha=0.05)
-net.fit(x_train, y_train, batch_size=10, epochs=1000, alpha=0.01)
-net.fit(x_train, y_train, batch_size=10, epochs=1000, alpha=0.005)
+plot_weights_on_layers(net_SGD)
 
 predictions = []
-for x in x_train:
-    predictions.append(net.predict(x))
-    
-predictions
+for x in x_test:
+    predictions.append(net_SGD.predict(x))
+predictions = np.array(predictions)
+predictions = predictions * a + b
 
-plt.plot(x_train, y_train, 'o')
-plt.plot(x_train, predictions, 'o')
+plt.plot(x_test, y_test, 'o')
+plt.plot(x_test, predictions, 'o')
+plt.legend(('test data', 'SGD prediction'), loc='upper left')
 plt.show()
 
-print(MSE(predictions, y_train))
+print("MSE on test set: ", current_MSE_SGD)
+print("Last epoch: ", epoch - 1)
+print("Time elapsed: ", end - start)
 
-net.get_all_weights()
+#%% weights
 
-#%%
-import pandas as pd
+print(net_SGD.get_all_weights())
 
-X = pd.DataFrame([[1, 2], [3, 4]])
-X
-X.to_list()
+# [array([[-2.12139123],
+#        [-2.91630697],
+#        [-0.00601446],
+#        [-0.72794638],
+#        [-2.23782617]]), array([[ 3.97242838, -4.49332835,  1.60438546,  2.54970584, -2.18449294]])]
 
-X = pd.Series([[1, 2], [3, 4]])
-X.to_list()
+print(net_SGD.get_all_biases())
 
-#%%
-
-df_train[0:10]
-df_train[0:10]
-
-for x in df_train[0:10]:
-    print(x)
-    
-np.array(np.array(df_train)[0:10])
-y_train
-np.array(y_train)
+# [array([-2.96070156,  5.01817101,  0.35677676, -0.60697734,  1.39951975]), array([4.16702137])]
 
 #%%
 
-np.array(df_train)
+save(net_SGD.get_all_weights(), "weights1.txt")
+save(net_SGD.get_all_biases(), "biases1.txt")
 
-for x in np.array(df_train)[0:2]:
-    print(x[0])
-    print(x[1])
-    print(x[2])
-    print(x)
-    print(type(x))
-    
-    
+
