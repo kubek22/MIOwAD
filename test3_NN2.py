@@ -44,6 +44,15 @@ def sigma(x):
 def MSE(x, y):
     return sum((x - y) ** 2) / len(x)
 
+def count_MSE(net, x_test, y_test, scaler_y=None):
+    predictions = []
+    for x in x_test:
+        predictions.append(net.predict(x))
+    predictions = np.array(predictions)
+    if scaler_y is not None:
+        predictions = scaler_y.inverse_transform(np.array([predictions]))[0]
+    return MSE(predictions, y_test)
+
 #%%
 
 plt.plot(x_train, y_train, 'o')
@@ -66,15 +75,24 @@ plt.show()
 #%%
 
 f = [sigma, sigma, lambda x: x]
-
 net = Net(n_neurons=[5, 5, 1], n_inputs=1, functions=f, param_init='xavier')
+epoch = 0
 
 #%%
 
 start = time.time()
-net.fit(x_train_scaled, y_train_scaled, batch_size=16, epochs=10, alpha=0.01)
+
+current_MSE = math.inf
+while current_MSE > 10:
+    net.fit(x_train_scaled, y_train_scaled, batch_size=16, epochs=1, alpha=0.003)
+    epoch += 1
+    current_MSE = count_MSE(net, x_test_scaled, y_test, scaler_y)
+    print()
+    print(current_MSE)
+    print(epoch)
+    
 end = time.time()
-print("Time elapsed: ", end - start)
+
 
 #%%
 
@@ -88,7 +106,8 @@ plt.plot(x_test, y_test, 'o')
 plt.plot(x_test, predictions, 'o')
 plt.show()
 
-print(MSE(predictions, y_test))
+print(current_MSE)
+print("Time elapsed: ", end - start)
 
 #%%
 
