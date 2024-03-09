@@ -68,21 +68,6 @@ def count_MSE(net, x_test, y_test, a, b):
     predictions = np.array(predictions)
     predictions = predictions * a + b
     return MSE(predictions, y_test)
-
-def plot_weights_in_time(net, with_bias=True):
-    layers = []
-    norms = []
-
-    i = 0
-    for weights, biases in zip(net.get_all_weights(), net.get_all_biases()):
-        layers.append(i)
-        i += 1
-        if with_bias:
-            norms.append(np.linalg.norm(np.c_[weights, biases]))
-        else:
-            norms.append(np.linalg.norm(weights))
-    plt.plot(layers, norms, 'o')
-    plt.show()
     
 def plot_weights_on_layers(net, with_bias=True):
     layers = []
@@ -166,10 +151,10 @@ print("Time elapsed: ", end - start)
 print(net_SGD.get_all_weights())
 
 # [array([[-2.12139123],
-#        [-2.91630697],
-#        [-0.00601446],
-#        [-0.72794638],
-#        [-2.23782617]]), array([[ 3.97242838, -4.49332835,  1.60438546,  2.54970584, -2.18449294]])]
+#         [-2.91630697],
+#         [-0.00601446],
+#         [-0.72794638],
+#         [-2.23782617]]), array([[ 3.97242838, -4.49332835,  1.60438546,  2.54970584, -2.18449294]])]
 
 print(net_SGD.get_all_biases())
 

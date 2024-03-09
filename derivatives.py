@@ -43,3 +43,19 @@ f = np.vectorize(grad(sigma))
 
 f(0.0)
 
+#%%
+
+def ReLU(x):
+    if x > 0:
+        return x
+    return 0.0
+
+df_dx = grad(ReLU)
+
+df_dx(0.0)
+df_dx(1.0)
+df_dx(-1.0)
+
+
+
+
