@@ -54,6 +54,22 @@ def count_MSE(net, x_test, y_test, scaler_y=None):
         predictions = scaler_y.inverse_transform(np.array([predictions]))[0]
     return MSE(predictions, y_test)
 
+def plot_weights_on_layers(net, with_bias=True):
+    layers = []
+    norms = []
+    i = 0
+    for weights, biases in zip(net.get_all_weights(), net.get_all_biases()):
+        layers.append(i)
+        i += 1
+        if with_bias:
+            norms.append(np.linalg.norm(np.c_[weights, biases]))
+        else:
+            norms.append(np.linalg.norm(weights))
+    plt.plot(layers, norms, 'o')
+    plt.xlabel('layer')
+    plt.ylabel('Frobenius norm')
+    plt.show()
+
 #%%
 
 plt.plot(x_train, y_train, 'o')
@@ -101,83 +117,87 @@ plt.plot(x_train_scaled, y_train, 'o')
 plt.plot(x_test_scaled, y_test, 'o')
 plt.show()
 
-#%%
-
-f = [sigma, sigma, lambda x: x]
-net = Net(n_neurons=[5, 5, 1], n_inputs=1, functions=f, param_init='xavier')
-epoch = 0
-
-#%%
+#%% GD and SGD comparison
 
 start = time.time()
 
-current_MSE = math.inf
-while current_MSE > 4:
-    net.fit(x_train_scaled, y_train, batch_size=1, epochs=100, alpha=0.001)
-    epoch += 100
-    current_MSE = count_MSE(net, x_test_scaled, y_test)
-    print()
-    print(current_MSE)
-    print(epoch)
-    
+f = [sigma, sigma, lambda x: x]
+net_GD = Net(n_neurons=[5, 5, 1], n_inputs=1, functions=f, param_init='xavier')
+net_SGD = Net(n_neurons=[5, 5, 1], n_inputs=1, functions=f, param_init='xavier')
+
+epoch = 1
+epochs = []
+MSE_GD = []
+MSE_SGD = []
+current_MSE_SGD = math.inf
+norms = [[] for _ in range(net_SGD.get_n_layers())]
+
+while current_MSE_SGD > 4:
+    epochs.append(epoch)
+    epoch += 1
+    net_GD.fit(x_train_scaled, y_train, batch_size=len(x_train), epochs=1, alpha=0.001)
+    net_SGD.fit(x_train_scaled, y_train, batch_size=1, epochs=1, alpha=0.001)
+    MSE_GD.append(count_MSE(net_GD, x_test_scaled, y_test))
+    current_MSE_SGD = count_MSE(net_SGD, x_test_scaled, y_test)
+    MSE_SGD.append(current_MSE_SGD)
+    for norm, weights, biases in zip(norms, net_SGD.get_all_weights(), net_SGD.get_all_biases()):
+        norm.append(np.linalg.norm(np.c_[weights, biases]))
+        
 end = time.time()
 
-#%%
+#%% results
+
+plt.plot(epochs, MSE_GD, 'o', markersize=3)
+plt.plot(epochs, MSE_SGD, 'o', markersize=3)
+plt.legend(('GD', 'SGD'), loc='upper right')
+plt.xlabel('epoch')
+plt.ylabel('MSE')
+plt.show()
+
+for norm in norms:
+    plt.plot(epochs, norm, 'o')
+plt.legend(('layer 1', 'layer 2', 'layer 3'), loc='upper left')
+plt.xlabel('epoch')
+plt.ylabel('Frobenius norm')
+plt.show()
+    
+plot_weights_on_layers(net_SGD)
 
 predictions = []
 for x in x_test_scaled:
-    predictions.append(net.predict(x))
-    
+    predictions.append(net_SGD.predict(x))
 predictions = np.array(predictions)
 
 plt.plot(x_test, y_test, 'o')
 plt.plot(x_test, predictions, 'o')
-plt.legend(('test data', 'prediction'), loc='upper left')
+plt.legend(('test data', 'SGD prediction'), loc='upper left')
 plt.show()
 
-print("MSE on test set: ", current_MSE)
-print("Last epoch: ", epoch)
+print("MSE on test set: ", current_MSE_SGD)
+print("Last epoch: ", epoch - 1)
 print("Time elapsed: ", end - start)
 
 #%%
 
-predictions = []
-for x in x_train_scaled:
-    predictions.append(net.predict(x))
-    
-predictions = np.array(predictions)
+print(net_SGD.get_all_weights())
 
-plt.plot(x_train, y_train, 'o')
-plt.plot(x_train, predictions, 'o')
-plt.legend(('train data', 'prediction'), loc='upper left')
-plt.show()
-
-#%%
-
-print(net.get_all_weights())
-
-# [array([[  61.93576474],
-#         [ 130.07547676],
-#         [  91.54616894],
-#         [ 162.08861522],
-#         [-133.07079102]]), array([[ -0.68358782,   4.23320536,   5.18156445,  28.92826691,
-#           -5.30175373],
-#         [ 11.76158695,  21.9798658 , -10.80115653,   4.05282524,
-#         -14.4607159 ],
-#         [ -4.94746115,  15.11984581,  13.95792541,  -3.43070877,
-#           -4.76090865],
-#         [  2.10624244,   2.94437684,   3.12186382,  17.7065442 ,
-#         -18.9827919 ],
-#         [  2.14255029,   2.69070948,   3.0881394 ,   4.05327652,
-#         -27.43692015]]), array([[67.32086457, 47.02607187, 46.95173686, 37.61049278, 42.05187561]])]
+# [array([[ 76.96532544],
+#        [ 61.50798303],
+#        [-80.74217717],
+#        [ 55.70524017],
+#        [-53.43914715]]), array([[ -5.2939661 ,  12.50408565,  -3.3836204 ,  11.46347492,
+#          -3.11700272],
+#        [  3.33594549,   4.49276271, -21.27274803,   3.25830521,
+#           2.72592104],
+#        [ 12.1672839 ,   3.24528997,  -8.66299348,   3.72672717,
+#           1.23120511],
+#        [ 10.3940408 ,   3.30087455,  -4.01948676,   2.70480218,
+#         -12.55941614],
+#        [ -2.45839681,  11.65663521,  -4.12681375,  10.34695105,
+#          -5.86721897]]), array([[42.10533155, 43.49564339, 52.02194957, 62.11164708, 40.55983008]])]
                                   
-print(net.get_all_biases())
+print(net_SGD.get_all_biases())
 
-# [array([-33.08260402, -71.42652726, -41.87731959, -10.59126221,
-#         -56.05604632]), array([-16.75779692,  -4.90152066, -10.51791342,   8.12430246,
-#         11.67954216]), array([-80.17236565])]
+# [array([ -7.00500811, -34.05981431, -34.32622315, -30.94712279,
+#          2.22703309]), array([-9.7092824 ,  7.25983628, -0.30632592, -0.8497914 , -4.67800886]), array([-79.72896034])]
 
-#%%
-
-save(net.get_all_weights(), "weights2.txt")
-save(net.get_all_biases(), "biases2.txt")

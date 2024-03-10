@@ -199,11 +199,6 @@ class Net:
                 weights += w
             for weights, w in zip(delta_biases, db):
                 weights += w
-        # model_weights = self.get_all_weights()
-        # for weights, w in zip(model_weights, delta_weights):
-        #     weights += w / n
-        # for layer, layer_weights in zip(self.layers, model_weights):
-        #     layer.set_weights(layer_weights)
         for layer, dw in zip(self.layers, delta_weights):
             layer.weights += dw / n
         for layer, delta_bias in zip(self.layers, delta_biases):

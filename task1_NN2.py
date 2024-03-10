@@ -61,7 +61,7 @@ plt.show()
 
 #%%
 
-def count_MSE(net, x_test, y_test, a, b):
+def count_MSE(net, x_test, y_test, a=1, b=0):
     predictions = []
     for x in x_test:
         predictions.append(net.predict(x))
@@ -159,10 +159,5 @@ print(net_SGD.get_all_weights())
 print(net_SGD.get_all_biases())
 
 # [array([-2.96070156,  5.01817101,  0.35677676, -0.60697734,  1.39951975]), array([4.16702137])]
-
-#%%
-
-save(net_SGD.get_all_weights(), "weights1.txt")
-save(net_SGD.get_all_biases(), "biases1.txt")
 
 
