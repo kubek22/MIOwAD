@@ -17,8 +17,6 @@ class Net:
             self.n_neurons = self.weights.shape[0]
             self.function = np.vectorize(function)
             self.df_dx = np.vectorize(grad(function))
-            # possible (not needed)
-            # self.functions = [function for _ in range(self.n_neurons)]
             if type(bias) is list:
                 bias = np.array(bias)
             self.bias = bias
@@ -35,7 +33,6 @@ class Net:
             result = result + self.bias
             if save_args:
                 self.args = result
-            # if type(self.functions) is list: ...
             return self.function(result)
 
         def get_n_neurons(self):
@@ -49,12 +46,6 @@ class Net:
 
         def get_function(self):
             return self.function
-
-        # def get_functions(self):
-        #     return self.functions
-
-        # def get_function(self, neuron_index):
-        #     return self.functions[neuron_index] if neuron_index < self.get_n_neurons() else None
 
         def get_n_inputs(self):
             return self.weights.shape[1]
@@ -180,10 +171,10 @@ class Net:
             while i * batch_size < n:
                 lb = i * batch_size
                 ub = lb + batch_size
-                self.mini_batch(x_train[lb: ub], y_train[lb: ub], alpha)
+                self.__mini_batch(x_train[lb: ub], y_train[lb: ub], alpha)
                 i += 1
 
-    def mini_batch(self, x_batch, y_batch, alpha):
+    def __mini_batch(self, x_batch, y_batch, alpha):
         n = len(x_batch)
         x_flat = False
         y_flat = False
@@ -194,7 +185,7 @@ class Net:
         delta_weights = self.__zero_weights()
         delta_biases = [np.zeros(layer.get_n_neurons()) for layer in self.layers]
         for x, y in zip(x_batch, y_batch):
-            dw, db = self.back_propagate([x] if x_flat else x, [y] if y_flat else y, alpha)
+            dw, db = self.__back_propagate([x] if x_flat else x, [y] if y_flat else y, alpha)
             for weights, w in zip(delta_weights, dw):
                 weights += w
             for weights, w in zip(delta_biases, db):
@@ -204,7 +195,7 @@ class Net:
         for layer, delta_bias in zip(self.layers, delta_biases):
             layer.bias += delta_bias / n
 
-    def back_propagate(self, x, y, alpha):
+    def __back_propagate(self, x, y, alpha):
         n = self.get_n_layers()
         delta_weights = [0 for i in range(n)]
         y_pred = self.predict(x, save_args=True)
@@ -240,9 +231,6 @@ class Net:
 
     def get_layer_function(self, layer_index):
         return self.layers[layer_index].get_function() if layer_index < self.get_n_layers() else None
-
-    # def get_function(self, layer_index, neuron_index):
-    #     return self.layers[layer_index].get_function(neuron_index) if layer_index < self.get_n_layers() else None
 
     def get_n_inputs(self):
         return self.layers[0].get_n_inputs()

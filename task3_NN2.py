@@ -113,16 +113,10 @@ current_MSE_SGD = math.inf
 norms = [[] for _ in range(net_SGD.get_n_layers())]
 
 while current_MSE_SGD > 40:
-    print(current_MSE_SGD)
-    print(epoch)
-    print()
     epochs.append(epoch)
     epoch += 1
-    alpha = 0.003
-    if current_MSE_SGD < 100:
-        alpha = 0.0005
-    net_GD.fit(x_train_scaled, y_train_scaled, batch_size=len(x_train), epochs=1, alpha=alpha) #0.0001 #0.003
-    net_SGD.fit(x_train_scaled, y_train_scaled, batch_size=1, epochs=1, alpha=alpha)
+    net_GD.fit(x_train_scaled, y_train_scaled, batch_size=len(x_train), epochs=1, alpha=0.003)
+    net_SGD.fit(x_train_scaled, y_train_scaled, batch_size=1, epochs=1, alpha=0.003)
     MSE_GD.append(count_MSE(net_GD, x_test_scaled, y_test, scaler_y))
     current_MSE_SGD = count_MSE(net_SGD, x_test_scaled, y_test, scaler_y)
     MSE_SGD.append(current_MSE_SGD)

@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="edbc9381-c780-4120-baa5-88df010ab15c" name="Changes" comment="back propagation" />
+    <list default="true" id="edbc9381-c780-4120-baa5-88df010ab15c" name="Changes" comment="back propagation">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test3_NN2.py" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -62,6 +66,8 @@
       <workItem from="1709199979547" duration="637000" />
       <workItem from="1709298322203" duration="14195000" />
       <workItem from="1709379527777" duration="2025000" />
+      <workItem from="1710109614597" duration="88000" />
+      <workItem from="1710153553986" duration="144000" />
     </task>
     <task id="LOCAL-00001" summary="initializing weights">
       <option name="closed" value="true" />
