@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from autograd import grad
+import sys
 
 
 class Net:
@@ -158,7 +159,7 @@ class Net:
             args = args[0]
         return args
 
-    def fit(self, x_train, y_train, batch_size, epochs, alpha):
+    def fit(self, x_train, y_train, batch_size, epochs, alpha, method=None, m_lambda=0, beta=0.5):
         x_train = np.array(x_train)
         y_train = np.array(y_train)
         n = len(x_train)
@@ -166,15 +167,29 @@ class Net:
         np.random.shuffle(index)
         x_train = x_train[index]
         y_train = y_train[index]
+        if method == 'momentum':
+            momentum_weights = self.__zero_weights()
+            momentum_biases = [np.zeros(layer.get_n_neurons()) for layer in self.layers]
+        if method == 'rmsprop':
+            exp_g_weights = self.__zero_weights()
+            exp_g_biases = [np.zeros(layer.get_n_neurons()) for layer in self.layers]
         for _ in range(epochs):
             i = 0
             while i * batch_size < n:
                 lb = i * batch_size
                 ub = lb + batch_size
-                self.__mini_batch(x_train[lb: ub], y_train[lb: ub], alpha)
+                # momentum_weights, momentum_biases, exp_g_weights, exp_g_biases = self.__mini_batch(x_train[lb: ub], y_train[lb: ub], alpha, 
+                #                                                       m_lambda, momentum_weights, momentum_biases,
+                #                                                       beta, exp_g_weights, exp_g_biases)
+                if method is None:
+                    self.__mini_batch(x_train[lb: ub], y_train[lb: ub], alpha)
+                elif method == 'momentum':
+                    momentum_weights, momentum_biases = self.__mini_batch(x_train[lb: ub], y_train[lb: ub], alpha, method=method, m_lambda=m_lambda, momentum_weights=momentum_weights, momentum_biases=momentum_biases)
+                elif method == 'rmsprop':
+                    exp_g_weights, exp_g_biases = self.__mini_batch(x_train[lb: ub], y_train[lb: ub], alpha, method=method, beta=beta, exp_g_weights=exp_g_weights, exp_g_biases=exp_g_biases)
                 i += 1
 
-    def __mini_batch(self, x_batch, y_batch, alpha):
+    def __mini_batch(self, x_batch, y_batch, alpha, method=None, m_lambda=0, momentum_weights=None, momentum_biases=None, beta=0.5, exp_g_weights=None, exp_g_biases=None):
         n = len(x_batch)
         x_flat = False
         y_flat = False
@@ -190,10 +205,44 @@ class Net:
                 weights += w
             for weights, w in zip(delta_biases, db):
                 weights += w
+        if method is None:
+            return self.__basic_update(n, delta_weights, delta_biases)
+        if method == 'momentum':
+            return self.__momentum_update(n, momentum_weights, delta_weights, momentum_biases, delta_biases, m_lambda)
+        if method == 'rmsprop':
+            return self.__rmsprop_update(exp_g_weights, delta_weights, exp_g_biases, delta_biases, beta)
+    
+    def __basic_update(self, n, delta_weights, delta_biases):
         for layer, dw in zip(self.layers, delta_weights):
             layer.weights += dw / n
         for layer, delta_bias in zip(self.layers, delta_biases):
             layer.bias += delta_bias / n
+        return
+    
+    def __momentum_update(self, n, momentum_weights, delta_weights, momentum_biases, delta_biases, m_lambda):
+        for mw, dw in zip(momentum_weights, delta_weights):
+            mw = dw + mw * m_lambda
+        for mb, db in zip(momentum_biases, delta_biases):
+            mb = db + mb * m_lambda
+        for layer, mw in zip(self.layers, momentum_weights):
+            layer.weights += mw
+        for layer, mb in zip(self.layers, momentum_biases):
+            layer.bias += mb
+        return momentum_weights, momentum_biases
+    
+    def __rmsprop_update(self, exp_g_weights, delta_weights, exp_g_biases, delta_biases, beta):
+        eps = sys.float_info.epsilon * 10 ** 6
+        eps = 10 ** (-2)
+        eps = 1
+        for exp_g_w, dw in zip(exp_g_weights, delta_weights):
+            exp_g_w = exp_g_w * beta + (1 - beta) * dw ** 2
+        for exp_g_b, db in zip(exp_g_biases, delta_biases):
+            exp_g_b = exp_g_b * beta + (1 - beta) * db ** 2
+        for layer, dw, exp_g_w in zip(self.layers, delta_weights, exp_g_weights):
+            layer.weights += dw / (np.sqrt(exp_g_w) + eps)
+        for layer, db, exp_g_b in zip(self.layers, delta_biases, exp_g_biases):
+            layer.bias += db / (np.sqrt(exp_g_b) + eps)
+        return exp_g_weights, exp_g_biases
 
     def __back_propagate(self, x, y, alpha):
         n = self.get_n_layers()
