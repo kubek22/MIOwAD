@@ -87,7 +87,7 @@ plt.show()
 f = [sigma, lambda x: x]
 net = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-net.fit(x_train, y_train, 1, epochs=100, alpha=0.003)
+net.fit(x_train, y_train, 4, epochs=100, alpha=0.003)
 
 predictions = []
 for x in x_test:
@@ -105,7 +105,7 @@ plt.show()
 f = [sigma, lambda x: x]
 net = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-net.fit(x_train, y_train, 1, epochs=100, alpha=0.003, method='momentum', m_lambda=1)
+net.fit(x_train, y_train, 4, epochs=100, alpha=0.003, method='momentum', m_lambda=0.5)
 
 predictions = []
 for x in x_test:

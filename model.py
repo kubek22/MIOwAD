@@ -170,7 +170,7 @@ class Net:
         if method == 'momentum':
             momentum_weights = self.__zero_weights()
             momentum_biases = [np.zeros(layer.get_n_neurons()) for layer in self.layers]
-        if method == 'rmsprop':
+        elif method == 'rmsprop':
             exp_g_weights = self.__zero_weights()
             exp_g_biases = [np.zeros(layer.get_n_neurons()) for layer in self.layers]
         for _ in range(epochs):
@@ -178,18 +178,21 @@ class Net:
             while i * batch_size < n:
                 lb = i * batch_size
                 ub = lb + batch_size
-                # momentum_weights, momentum_biases, exp_g_weights, exp_g_biases = self.__mini_batch(x_train[lb: ub], y_train[lb: ub], alpha, 
-                #                                                       m_lambda, momentum_weights, momentum_biases,
-                #                                                       beta, exp_g_weights, exp_g_biases)
+                i += 1
                 if method is None:
                     self.__mini_batch(x_train[lb: ub], y_train[lb: ub], alpha)
                 elif method == 'momentum':
-                    momentum_weights, momentum_biases = self.__mini_batch(x_train[lb: ub], y_train[lb: ub], alpha, method=method, m_lambda=m_lambda, momentum_weights=momentum_weights, momentum_biases=momentum_biases)
+                    momentum_weights, momentum_biases = self.__mini_batch(x_train[lb: ub], y_train[lb: ub], alpha, 
+                                                                          method=method, m_lambda=m_lambda, 
+                                                                          momentum_weights=momentum_weights, momentum_biases=momentum_biases)
                 elif method == 'rmsprop':
-                    exp_g_weights, exp_g_biases = self.__mini_batch(x_train[lb: ub], y_train[lb: ub], alpha, method=method, beta=beta, exp_g_weights=exp_g_weights, exp_g_biases=exp_g_biases)
-                i += 1
+                    exp_g_weights, exp_g_biases = self.__mini_batch(x_train[lb: ub], y_train[lb: ub], alpha, 
+                                                                    method=method, beta=beta, 
+                                                                    exp_g_weights=exp_g_weights, exp_g_biases=exp_g_biases)
 
-    def __mini_batch(self, x_batch, y_batch, alpha, method=None, m_lambda=0, momentum_weights=None, momentum_biases=None, beta=0.5, exp_g_weights=None, exp_g_biases=None):
+    def __mini_batch(self, x_batch, y_batch, alpha, method=None, 
+                     m_lambda=0, momentum_weights=None, momentum_biases=None, 
+                     beta=0.5, exp_g_weights=None, exp_g_biases=None):
         n = len(x_batch)
         x_flat = False
         y_flat = False
@@ -221,9 +224,11 @@ class Net:
     
     def __momentum_update(self, n, momentum_weights, delta_weights, momentum_biases, delta_biases, m_lambda):
         for mw, dw in zip(momentum_weights, delta_weights):
-            mw = dw + mw * m_lambda
+            mw *= m_lambda
+            mw += dw
         for mb, db in zip(momentum_biases, delta_biases):
-            mb = db + mb * m_lambda
+            mb *= m_lambda
+            mb += db
         for layer, mw in zip(self.layers, momentum_weights):
             layer.weights += mw
         for layer, mb in zip(self.layers, momentum_biases):
@@ -232,12 +237,12 @@ class Net:
     
     def __rmsprop_update(self, exp_g_weights, delta_weights, exp_g_biases, delta_biases, beta):
         eps = sys.float_info.epsilon * 10 ** 6
-        eps = 10 ** (-2)
-        eps = 1
         for exp_g_w, dw in zip(exp_g_weights, delta_weights):
-            exp_g_w = exp_g_w * beta + (1 - beta) * dw ** 2
+            exp_g_w *= beta
+            exp_g_w += (1 - beta) * dw ** 2
         for exp_g_b, db in zip(exp_g_biases, delta_biases):
-            exp_g_b = exp_g_b * beta + (1 - beta) * db ** 2
+            exp_g_b *= beta
+            exp_g_b += (1 - beta) * db ** 2
         for layer, dw, exp_g_w in zip(self.layers, delta_weights, exp_g_weights):
             layer.weights += dw / (np.sqrt(exp_g_w) + eps)
         for layer, db, exp_g_b in zip(self.layers, delta_biases, exp_g_biases):
