@@ -75,7 +75,6 @@ def plot_weights_on_layers(net, with_bias=True):
     plt.ylabel('Frobenius norm')
     plt.show()
 
-
 #%%
 
 plt.plot(x_train, y_train, 'o')

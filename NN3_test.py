@@ -124,7 +124,7 @@ plt.show()
 f = [sigma, lambda x: x]
 net = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-net.fit(x_train, y_train, 4, epochs=100, alpha=0.003, method='rmsprop', beta=0.5)
+net.fit(x_train, y_train, 4, epochs=100, alpha=0.003, method='rmsprop', beta=0.9)
 
 predictions = []
 for x in x_test:
