@@ -82,18 +82,23 @@ def plot_weights_on_layers(net, with_bias=True):
 plt.plot(x_train, y_train, 'o')
 plt.show()
 
+#%% scaling
+
+b = np.min(y_train)
+a = np.mean((y_train - b) / (x_train ** 2))
+
 #%% basic net
 
 f = [sigma, lambda x: x]
 net = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-net.fit(x_train, y_train, 4, epochs=100, alpha=0.003)
+net.fit(x_train, (y_train - b) / a, 1, epochs=100, alpha=0.003)
 
 predictions = []
 for x in x_test:
     predictions.append(net.predict(x))
 predictions = np.array(predictions)
-predictions = predictions
+predictions = predictions * a + b
 
 plt.plot(x_test, y_test, 'o')
 plt.plot(x_test, predictions, 'o')
@@ -105,32 +110,31 @@ plt.show()
 f = [sigma, lambda x: x]
 net = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-net.fit(x_train, y_train, 4, epochs=100, alpha=0.003, method='momentum', m_lambda=0.5)
+net.fit(x_train, (y_train - b) / a, 1, epochs=100, alpha=0.003, method='momentum', m_lambda=0.9)
 
 predictions = []
 for x in x_test:
     predictions.append(net.predict(x))
 predictions = np.array(predictions)
-predictions = predictions
+predictions = predictions * a + b
 
 plt.plot(x_test, y_test, 'o')
 plt.plot(x_test, predictions, 'o')
 plt.legend(('test data', 'SGD prediction'), loc='upper left')
 plt.show()
 
-
 #%% rmsprop
 
 f = [sigma, lambda x: x]
 net = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-net.fit(x_train, y_train, 4, epochs=100, alpha=0.003, method='rmsprop', beta=0.9)
+net.fit(x_train, (y_train - b) / a, 1, epochs=100, alpha=0.003, method='rmsprop', beta=0.9)
 
 predictions = []
 for x in x_test:
     predictions.append(net.predict(x))
 predictions = np.array(predictions)
-predictions = predictions
+predictions = predictions * a + b
 
 plt.plot(x_test, y_test, 'o')
 plt.plot(x_test, predictions, 'o')

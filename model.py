@@ -213,7 +213,7 @@ class Net:
         if method == 'momentum':
             return self.__momentum_update(n, momentum_weights, delta_weights, momentum_biases, delta_biases, m_lambda)
         if method == 'rmsprop':
-            return self.__rmsprop_update(exp_g_weights, delta_weights, exp_g_biases, delta_biases, beta)
+            return self.__rmsprop_update(exp_g_weights, delta_weights, exp_g_biases, delta_biases, alpha, beta)
     
     def __basic_update(self, n, delta_weights, delta_biases):
         for layer, dw in zip(self.layers, delta_weights):
@@ -235,14 +235,14 @@ class Net:
             layer.bias += mb
         return momentum_weights, momentum_biases
     
-    def __rmsprop_update(self, exp_g_weights, delta_weights, exp_g_biases, delta_biases, beta):
+    def __rmsprop_update(self, exp_g_weights, delta_weights, exp_g_biases, delta_biases, alpha, beta):
         eps = sys.float_info.epsilon * 10 ** 6
         for exp_g_w, dw in zip(exp_g_weights, delta_weights):
             exp_g_w *= beta
-            exp_g_w += (1 - beta) * dw ** 2
+            exp_g_w += (1 - beta) * (dw / alpha) ** 2
         for exp_g_b, db in zip(exp_g_biases, delta_biases):
             exp_g_b *= beta
-            exp_g_b += (1 - beta) * db ** 2
+            exp_g_b += (1 - beta) * (db / alpha) ** 2
         for layer, dw, exp_g_w in zip(self.layers, delta_weights, exp_g_weights):
             layer.weights += dw / (np.sqrt(exp_g_w) + eps)
         for layer, db, exp_g_b in zip(self.layers, delta_biases, exp_g_biases):

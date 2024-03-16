@@ -7,7 +7,7 @@ from model import Net
 import math
 import pickle
 import time
-from sklearn.preprocessing import MinMaxScaler
+import copy
 
 #%%
 
@@ -29,13 +29,12 @@ def sigma(x):
 def MSE(x, y):
     return sum((x - y) ** 2) / len(x)
 
-def count_MSE(net, x_test, y_test, scaler_y=None):
+def count_MSE(net, x_test, y_test, a=1, b=0):
     predictions = []
     for x in x_test:
         predictions.append(net.predict(x))
     predictions = np.array(predictions)
-    if scaler_y is not None:
-        predictions = scaler_y.inverse_transform(np.array([predictions]))[0]
+    predictions = predictions * a + b
     return MSE(predictions, y_test)
 
 #%%
@@ -60,16 +59,23 @@ plt.show()
 
 #%% scaling
 
-scaler_x = MinMaxScaler(feature_range=(-0.8, 0.8))
-x_train_scaled = scaler_x.fit_transform(np.transpose([x_train]))
-x_test_scaled = scaler_x.transform(np.transpose([x_test]))
+b = np.min(y_train)
+a = np.mean((y_train - b) / (x_train ** 2))
 
-scaler_y = MinMaxScaler(feature_range=(-0.8, 0.8))
-y_train_scaled = scaler_y.fit_transform(np.transpose([y_train]))
-y_test_scaled = scaler_y.transform(np.transpose([y_test]))
+#%% data generating
 
-plt.plot(x_train_scaled, y_train_scaled, 'o')
-plt.plot(x_test_scaled, y_test_scaled, 'o')
+(y_train - b) / a / x_train ** 2 # quadratic dependency
+
+train_dens = len(x_train) / (max(x_train) - min(x_train))
+k = train_dens * (min(x_train) + max(x_train))
+k = int(k)
+x_train_add = np.linspace(-max(x_train), min(x_train), k)
+y_train_add = x_train_add ** 2 * a + b
+
+x_train = np.concatenate((x_train, x_train_add))
+y_train = np.concatenate((y_train, y_train_add))
+
+plt.plot(x_train, y_train, 'o', markersize=6)
 plt.show()
 
 #%%
@@ -78,7 +84,9 @@ start = time.time()
 
 f = [sigma, lambda x: x]
 net_momentum = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
-net_rmsprop = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
+_w = copy.deepcopy(net_momentum.get_all_weights())
+_b = copy.deepcopy(net_momentum.get_all_biases())
+net_rmsprop = Net(weights=_w, biases=_b, functions=f)
 
 epoch = 1
 epochs = []
@@ -86,23 +94,17 @@ MSE_momentum = []
 MSE_rmsprop = []
 current_MSE = math.inf
 e = 10
-min_learning_rate = 0.0001
-lr = min_learning_rate
 
 while current_MSE > 1:
     epochs.append(epoch)
     epoch += e
-    net_momentum.fit(x_train_scaled, y_train_scaled, batch_size=16, epochs=e, alpha=lr,
+    net_momentum.fit(x_train, (y_train - b) / a, batch_size=1, epochs=e, alpha=0.003,
                      method='momentum', m_lambda=0.9)
-    net_rmsprop.fit(x_train_scaled, y_train_scaled, batch_size=16, epochs=e, alpha=0.0001,
+    net_rmsprop.fit(x_train, (y_train - b) / a, batch_size=1, epochs=e, alpha=0.003,
                 method='rmsprop', beta=0.9)
-    mse_m = count_MSE(net_momentum, x_test_scaled, y_test, scaler_y)
-    if mse_m < 100:
-        lr = min_learning_rate * math.sqrt(mse_m / epoch)
-    else:
-        lr = 0.01
+    mse_m = count_MSE(net_momentum, x_test, y_test, a, b)
     MSE_momentum.append(mse_m)
-    mse_r = count_MSE(net_rmsprop, x_test_scaled, y_test, scaler_y)
+    mse_r = count_MSE(net_rmsprop, x_test, y_test, a, b)
     MSE_rmsprop.append(mse_r)
     current_MSE = min(mse_m, mse_r)
     print("Current epoch: ", epoch - 1)
@@ -112,44 +114,44 @@ while current_MSE > 1:
         
 end = time.time()
 
-#%% 
+#%% results
 
-f = [sigma, lambda x: x]
-net_rmsprop = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
-net_rmsprop.fit(x_train_scaled, y_train_scaled, batch_size=16, epochs=1000, alpha=0.003,
-            method='rmsprop', beta=0.9)
-mse_r = count_MSE(net_rmsprop, x_test_scaled, y_test, scaler_y)
+plt.plot(epochs, MSE_momentum, 'o-', markersize=4)
+plt.plot(epochs, MSE_rmsprop, 'o-', markersize=4)
+plt.legend(('Momentum', 'RMSprop'), loc='upper left')
+plt.xlabel('epoch')
+plt.ylabel('MSE')
+plt.show()
+
+plt.plot(epochs[1:], MSE_momentum[1:], 'o-', markersize=4)
+plt.plot(epochs[1:], MSE_rmsprop[1:], 'o-', markersize=4)
+plt.legend(('Momentum', 'RMSprop'), loc='upper left')
+plt.xlabel('epoch')
+plt.ylabel('MSE')
+plt.show()
+
+predictions = []
+for x in x_test:
+    predictions.append(net_momentum.predict(x))
+predictions = np.array(predictions) * a + b
+    
+plt.plot(x_test, y_test, 'o', markersize=6)
+plt.plot(x_test, predictions, 'o', markersize=3)
+plt.legend(('test data', 'Momentum prediction'), loc='upper left')
+plt.show()
+
+print("Current epoch: ", epoch - 1)
+print("MSE m: ", mse_m)
 print("MSE r: ", mse_r)
-print()
 
-predictions = []
-for x in x_test_scaled:
-    predictions.append(net_rmsprop.predict(x))
-predictions_scaled = scaler_y.inverse_transform(np.array([predictions]))[0]
+#%% weights
 
-plt.plot(x_test, y_test, 'o')
-plt.plot(x_test, predictions_scaled, 'o')
-plt.legend(('test data', 'SGD prediction'), loc='upper left')
-plt.show()
+print(net_momentum.get_all_weights())
+# [array([[-1.44975512],
+#        [-2.59111504],
+#        [ 1.97940641],
+#        [ 0.00856362],
+#        [ 2.51926735]]), array([[ 3.43419467, -4.85485462,  2.55283247,  3.87368232, -4.3562739 ]])]
 
-plt.plot(x_test_scaled, y_test_scaled, 'o')
-plt.plot(x_test_scaled, predictions, 'o')
-plt.legend(('test data', 'SGD prediction'), loc='upper left')
-plt.show()
-
-#%%
-
-predictions = []
-for x in x_train_scaled:
-    predictions.append(net_rmsprop.predict(x))
-predictions_scaled = scaler_y.inverse_transform(np.array([predictions]))[0]
-
-plt.plot(x_train, y_train, 'o')
-plt.plot(x_train, predictions_scaled, 'o')
-plt.legend(('test data', 'SGD prediction'), loc='upper left')
-plt.show()
-
-plt.plot(x_train_scaled, y_train_scaled, 'o')
-plt.plot(x_train_scaled, predictions, 'o')
-plt.legend(('test data', 'SGD prediction'), loc='upper left')
-plt.show()
+print(net_momentum.get_all_biases())
+# [array([-1.30008302,  4.84404562, -1.37596462,  1.91585271,  4.81962509]), array([4.50906119])]

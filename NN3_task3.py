@@ -1,0 +1,312 @@
+#%% 
+
+import numpy as np
+from pandas import read_csv
+import matplotlib.pyplot as plt
+from model import Net
+import math
+import pickle
+import time
+from sklearn.preprocessing import MinMaxScaler
+import warnings
+import copy
+
+#%%
+
+def save(array, file_name):
+    file = open(file_name, 'wb')
+    pickle.dump(array, file)
+    file.close()
+
+def read(filename):
+    with open(filename, 'rb') as file:
+        array = pickle.load(file)
+    return array
+
+#%%
+
+df_train = read_csv("data/regression/multimodal-large-training.csv")
+df_train.head()
+x_train = df_train["x"]
+y_train = df_train["y"]
+
+df_test = read_csv("data/regression/multimodal-large-test.csv")
+df_test.head()
+
+x_test = df_test["x"]
+y_test = df_test["y"]
+
+#%%
+
+def ReLU(x):
+    if x > 0:
+        return x
+    return 0.0
+
+def sigma(x):
+    if x > 0:
+        return 1 / (1 + math.e ** ((-1) * x))
+    return math.e ** x / (1 + math.e ** x)
+
+def MSE(x, y):
+    return sum((x - y) ** 2) / len(x)
+
+def count_MSE(net, x_test, y_test, scaler_y=None):
+    predictions = []
+    for x in x_test:
+        predictions.append(net.predict(x))
+    predictions = np.array(predictions)
+    if scaler_y is not None:
+        predictions = scaler_y.inverse_transform(np.array([predictions]))[0]
+    return MSE(predictions, y_test)
+
+def plot_weights_on_layers(net, with_bias=True):
+    layers = []
+    norms = []
+    i = 0
+    for weights, biases in zip(net.get_all_weights(), net.get_all_biases()):
+        layers.append(i)
+        i += 1
+        if with_bias:
+            norms.append(np.linalg.norm(np.c_[weights, biases]))
+        else:
+            norms.append(np.linalg.norm(weights))
+    plt.plot(layers, norms, 'o')
+    plt.xlabel('layer')
+    plt.ylabel('Frobenius norm')
+    plt.show()
+
+#%%
+
+plt.plot(x_train, y_train, 'o')
+plt.show()
+
+#%% scaling
+
+scaler_x = MinMaxScaler(feature_range=(-0.9, 0.9))
+x_train_scaled = scaler_x.fit_transform(np.transpose([x_train]))
+x_test_scaled = scaler_x.transform(np.transpose([x_test]))
+
+scaler_y = MinMaxScaler(feature_range=(-0.9, 0.9))
+y_train_scaled = scaler_y.fit_transform(np.transpose([y_train]))
+y_test_scaled = scaler_y.transform(np.transpose([y_test]))
+
+plt.plot(x_train_scaled, y_train_scaled, 'o')
+plt.plot(x_test_scaled, y_test_scaled, 'o')
+plt.show()
+
+#%%
+
+start = time.time()
+
+f = [sigma, sigma, lambda x: x]
+net_momentum = Net(n_neurons=[10, 10, 1], n_inputs=1, functions=f, param_init='xavier')
+_w = copy.deepcopy(net_momentum.get_all_weights())
+_b = copy.deepcopy(net_momentum.get_all_biases())
+net_rmsprop = Net(weights=_w, biases=_b, functions=f)
+
+epoch = 1
+epochs = []
+MSE_momentum = []
+MSE_rmsprop = []
+current_MSE = math.inf
+e = 10
+
+while current_MSE > 9:
+    epochs.append(epoch)
+    epoch += e
+    net_momentum.fit(x_train_scaled, y_train, batch_size=1, epochs=e, alpha=0.03,
+                     method='momentum', m_lambda=0.9)
+    net_rmsprop.fit(x_train_scaled, y_train, batch_size=1, epochs=e, alpha=0.03,
+                method='rmsprop', beta=0.9)
+    mse_m = count_MSE(net_momentum, x_test_scaled, y_test, scaler_y)
+    MSE_momentum.append(mse_m)
+    mse_r = count_MSE(net_rmsprop, x_test_scaled, y_test, scaler_y)
+    MSE_rmsprop.append(mse_r)
+    current_MSE = min(mse_m, mse_r)
+    print("Current epoch: ", epoch - 1)
+    print("MSE m: ", mse_m)
+    print("MSE r: ", mse_r)
+    print()
+        
+end = time.time()
+
+#%% GD and SGD comparison
+
+warnings.filterwarnings('ignore') 
+
+start = time.time()
+
+f = [ReLU, ReLU, lambda x: x]
+net_GD = Net(n_neurons=[20, 20, 1], n_inputs=1, functions=f, param_init='xavier')
+net_SGD = Net(n_neurons=[20, 20, 1], n_inputs=1, functions=f, param_init='xavier')
+
+epoch = 1
+epochs = []
+MSE_GD = []
+MSE_SGD = []
+current_MSE_SGD = math.inf
+norms = [[] for _ in range(net_SGD.get_n_layers())]
+
+while current_MSE_SGD > 40:
+    epochs.append(epoch)
+    epoch += 1
+    net_GD.fit(x_train_scaled, y_train_scaled, batch_size=len(x_train), epochs=1, alpha=0.003)
+    net_SGD.fit(x_train_scaled, y_train_scaled, batch_size=1, epochs=1, alpha=0.003)
+    MSE_GD.append(count_MSE(net_GD, x_test_scaled, y_test, scaler_y))
+    current_MSE_SGD = count_MSE(net_SGD, x_test_scaled, y_test, scaler_y)
+    MSE_SGD.append(current_MSE_SGD)
+    for norm, weights, biases in zip(norms, net_SGD.get_all_weights(), net_SGD.get_all_biases()):
+        norm.append(np.linalg.norm(np.c_[weights, biases]))
+        
+end = time.time()
+
+#%% results
+
+plt.plot(epochs, MSE_GD, 'o', markersize=3)
+plt.plot(epochs, MSE_SGD, 'o', markersize=3)
+plt.legend(('GD', 'SGD'), loc='upper right')
+plt.xlabel('epoch')
+plt.ylabel('MSE')
+plt.show()
+
+for norm in norms:
+    plt.plot(epochs, norm, 'o')
+plt.legend(('layer 1', 'layer 2', 'layer 3'), loc='upper left')
+plt.xlabel('epoch')
+plt.ylabel('Frobenius norm')
+plt.show()
+    
+plot_weights_on_layers(net_SGD)
+
+predictions = []
+for x in x_test_scaled:
+    predictions.append(net_SGD.predict(x))
+predictions = scaler_y.inverse_transform(np.array([predictions]))[0]
+
+plt.plot(x_test, y_test, 'o')
+plt.plot(x_test, predictions, 'o')
+plt.legend(('test data', 'SGD prediction'), loc='upper left')
+plt.show()
+
+print("MSE on test set: ", current_MSE_SGD)
+print("Last epoch: ", epoch - 1)
+print("Time elapsed: ", end - start)
+
+#%%  
+
+print(net_SGD.get_all_weights())
+
+# [array([[ 0.2451122 ],
+#        [ 0.49398944],
+#        [ 1.35277806],
+#        [ 0.54770582],
+#        [ 0.85725044],
+#        [-1.23279296],
+#        [ 0.1000481 ],
+#        [-1.49498425],
+#        [ 0.2288381 ],
+#        [ 0.3558546 ],
+#        [-1.52822066],
+#        [-2.53860574],
+#        [-0.31905665],
+#        [-0.67794145],
+#        [-2.00401787],
+#        [-0.75316345],
+#        [ 0.48679139],
+#        [ 0.19937985],
+#        [ 0.03020439],
+#        [ 0.13828467]]), array([[-0.2989271 ,  0.01437531, -0.60634374,  0.34742755,  0.51483785,
+#          0.44893978,  0.10850442, -0.04994911,  0.18199769,  0.35964665,
+#          0.26172442,  0.68077808,  0.25606632,  0.18228251, -0.89723687,
+#         -0.32885427,  0.20018664, -0.31956531, -0.29729996, -0.31618301],
+#        [ 0.08819282, -0.32776033, -0.06477737, -0.07639084, -0.03812624,
+#         -0.62753059,  0.15181568,  0.59519661,  0.06735015,  0.47388721,
+#         -0.34893201,  0.50811737, -0.24758181, -0.07176043, -0.89264159,
+#          0.07653401,  0.50747788,  0.44702751,  0.06430664,  0.05580201],
+#        [-0.01919591, -0.02798977, -0.03431504,  0.18281192,  0.50197932,
+#         -0.07815182,  0.27312838, -0.48837851,  0.49944281,  0.48812705,
+#         -0.51548659, -1.03984331, -0.02482257,  0.29920493,  0.63512328,
+#         -0.41967627,  0.5212023 ,  0.62220026,  0.23989917,  0.44106395],
+#        [-0.18913554,  0.30175566,  0.35508646,  0.12064241, -0.38270782,
+#         -0.07139817,  0.08655649,  0.32455786, -0.26668293,  0.01482748,
+#          0.08030082, -0.26188918, -0.06358853,  0.07334565,  0.52900957,
+#          0.39585759, -0.17941556,  0.06377756, -0.3931779 ,  0.09173308],
+#        [ 0.26619864,  0.21659425,  0.26060758, -0.21895383, -0.15468977,
+#          0.31401396, -0.12646304, -0.22341258,  0.03218612, -0.17689795,
+#         -0.05845198, -0.20341058,  0.10380256,  0.17468501, -0.22447003,
+#         -0.05946349, -0.38797783,  0.34820541, -0.21550304, -0.27622412],
+#        [ 0.04398152, -0.12230271, -1.28513181,  0.12629337, -0.01358689,
+#         -0.34668569,  0.28841409,  0.60092845, -0.04071391,  0.02493363,
+#         -0.85201751, -0.595884  , -0.07516601,  0.52139286,  1.32346794,
+#          0.16067077, -0.14289451,  0.38572926,  0.17786322, -0.2060848 ],
+#        [ 0.45625949,  0.50607769,  0.54752636,  0.40404462,  0.67204433,
+#         -0.82251189,  0.25121191,  0.84268192,  0.08811886,  0.23792411,
+#         -0.89657194, -0.64179817, -0.17430276, -0.71815779, -1.05893041,
+#          0.20990173,  0.28215034,  0.40614403,  0.36672473, -0.05678802],
+#        [-0.28446438,  0.17598016, -0.00281631,  0.23097733,  0.14089687,
+#         -0.07629435, -0.07502178, -0.31817642,  0.14496373, -0.19949274,
+#         -0.28378409, -0.85140403,  0.20509109, -0.10587989,  0.44143534,
+#         -0.38632248,  0.10249761, -0.27727218,  0.15603266,  0.22815537],
+#        [-0.14808698, -0.36892253,  0.15946475, -0.50550516, -0.38430611,
+#         -0.24415526, -0.05899546, -0.0409282 , -0.06102204,  0.06793275,
+#          0.35924576,  0.7230841 , -0.26316163, -0.11916232,  0.04826945,
+#          0.02251565, -0.11158545, -0.05954271,  0.20212687, -0.17208492],
+#        [ 0.11315564, -0.05963539,  0.4911483 , -0.53350556, -0.52609921,
+#          0.13250137, -0.2379404 ,  0.06110095,  0.25920486, -0.22092696,
+#          0.20597994,  0.12237634,  0.35061341, -0.26928006,  0.08614913,
+#         -0.00672448, -0.44413742, -0.21021744, -0.14515176, -0.3042219 ],
+#        [ 0.25446237, -0.30367688, -0.69931062,  0.22717896,  0.52440947,
+#         -0.09147676,  0.00417679,  0.22892415,  0.3567438 ,  0.33265591,
+#         -0.19210279,  0.18754434,  0.04722137, -0.09561082, -0.6789863 ,
+#          0.48515844,  0.36882267,  0.38792644,  0.03024933,  0.05998577],
+#        [-0.00776596,  0.25599566, -0.08397168,  0.20195623,  0.04288245,
+#         -0.33196801,  0.22785508,  0.03189647,  0.12704791, -0.01027305,
+#         -0.12872085,  0.05872797,  0.29519491, -0.13154093, -0.13501058,
+#          0.04961732, -0.05887106, -0.07064656, -0.15110201,  0.32315377],
+#        [ 0.1092485 , -0.14236615,  0.25134284, -0.25785991,  0.32958321,
+#         -0.19650617, -0.03712522, -0.46165936,  0.33956227,  0.22587316,
+#          0.10992123, -0.71631722, -0.15018621, -0.01487761,  0.69226503,
+#         -0.2835587 ,  0.28212871,  0.37160106, -0.11171741, -0.10061063],
+#        [-0.16156061, -0.50035978,  0.6787349 , -0.40660835, -0.89171322,
+#          0.36274841,  0.24560128,  0.93193322, -0.19372961, -0.03186791,
+#          0.16244876, -0.694062  ,  0.23136286,  0.63819967,  0.73564638,
+#          0.04997646, -0.36509666, -0.09985095,  0.30876538, -0.29294464],
+#        [-0.05459487,  0.15008558,  0.49793846, -0.08207444, -0.31065687,
+#          0.17293067, -0.08664364, -0.30323653,  0.02484527,  0.01495383,
+#          0.29789352,  0.18147591,  0.090276  ,  0.23087121,  0.01569736,
+#         -0.32202132, -0.21907591,  0.03166274, -0.40688777, -0.1498508 ],
+#        [-0.28804204, -0.00973275,  0.12248209, -0.23421421, -0.40198026,
+#          0.40907718,  0.22190717,  0.2109583 ,  0.04376719, -0.23707322,
+#          0.37710183,  0.11165465, -0.0218133 , -0.13192178, -0.48333357,
+#         -0.20495123,  0.02695636, -0.38744421, -0.03053326,  0.27336571],
+#        [ 0.01376377,  0.02595875, -0.17729563,  0.00269417,  0.42066218,
+#         -0.26543278, -0.2038607 , -0.10347536,  0.16472075,  0.14306298,
+#         -0.32429275,  0.31833041, -0.22106388,  0.37541974, -0.11667748,
+#         -0.007055  , -0.13929365, -0.20008077,  0.15080809, -0.19927251],
+#        [ 0.26743337, -0.30775535,  0.11325934, -0.01004718, -0.15736312,
+#         -0.19166271,  0.25214084,  0.18676952, -0.06675426,  0.15549882,
+#          0.15451014,  0.03200895, -0.15713397, -0.18105609, -0.33859181,
+#          0.21620545, -0.30839534,  0.10652314,  0.23450285,  0.33129675],
+#        [-0.23276965,  0.37046193,  0.25107387,  0.01888248,  0.07300321,
+#          0.31868821,  0.10762225, -0.40242643, -0.12380134, -0.04506228,
+#          0.23502806,  0.00996528, -0.18160658,  0.27667896,  0.04928426,
+#          0.19934902,  0.16800924, -0.01616514,  0.17783737, -0.43176849],
+#        [ 0.25624571, -0.09224596, -0.12792862,  0.22930618,  0.42346443,
+#          0.09847335,  0.19411219, -1.28489792, -0.06227194, -0.07707718,
+#         -0.29560434, -2.44744729, -0.56734849,  0.17717116,  0.97495211,
+#         -0.71327944,  0.26314347,  0.16438615,  0.14177226, -0.2303047 ]]), array([[-1.02005216, -0.55597703,  1.58312001,  0.5010603 ,  0.16408456,
+#         -1.67033473, -1.98127655,  0.82066515,  0.50944022,  0.46935271,
+#         -0.75586018, -0.2232666 ,  0.95347338,  1.15278979,  0.33579709,
+#         -0.31515297, -0.31168363, -0.09592486,  0.18322423,  2.43493468]])]
+
+print(net_SGD.get_all_biases())
+
+# [array([ 0.20776058, -0.12398623,  1.03629407,  0.46042639,  0.72155749,
+#         0.00592609,  0.23876088,  1.05321806,  0.24296889,  0.29977567,
+#        -0.08209069,  0.69551733,  0.22307652,  0.43022356,  1.24976388,
+#         0.54401977,  0.46338706,  0.51402914,  0.17675851,  0.11727385]), array([ 0.3411709 ,  0.77114266,  1.0251185 , -0.10554757,  0.93367558,
+#         1.48638067,  0.65553197,  0.05231239,  0.49993662,  0.77982787,
+#         0.58883605,  0.59586471,  0.38078868,  0.588705  ,  0.41153191,
+#         0.87460044, -0.05756716,  0.61190869,  0.0739575 ,  0.35924419]), array([0.38583844])]
+

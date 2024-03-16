@@ -18,6 +18,43 @@ x_test = df_test["x"]
 y_test = df_test["y"]
 
 #%%
+df_train = read_csv("data/regression/square-large-training.csv")
+df_train.head()
+
+x_train = df_train["x"]
+y_train = df_train["y"]
+
+df_test = read_csv("data/regression/square-large-test.csv")
+df_test.head()
+
+x_test = df_test["x"]
+y_test = df_test["y"]
+
+#%% scaling
+
+b = np.min(y_train)
+a = np.mean((y_train - b) / (x_train ** 2))
+
+#%%
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(units=5, activation='sigmoid'),
+    tf.keras.layers.Dense(units=1)  # Output layer with linear activation
+])
+
+# Compile the model
+model.compile(optimizer='rmsprop', loss='mean_squared_error')
+
+model.fit(x_train, (y_train - b) / a, epochs=100, verbose=0, use_multiprocessing=True, batch_size=1)
+
+pred = model.predict(x_train) * a + b
+plt.plot(x_train, y_train, 'o')
+plt.plot(x_train, pred, 'o')
+plt.show()
+
+sum((np.transpose(pred)[0] - y_train) ** 2) / len(pred)
+
+#%%
 
 model = tf.keras.Sequential([
     tf.keras.layers.Dense(units=1, input_shape=(1,)),
