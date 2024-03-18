@@ -54,17 +54,16 @@ y_test = df_test["y"]
 #%%
 
 plt.plot(x_train, y_train, 'o', markersize=6)
-plt.plot(x_test, y_test, 'o', markersize=4)
 plt.show()
 
-#%% scaling
+#%% params
 
 b = np.min(y_train)
 a = np.mean((y_train - b) / (x_train ** 2))
 
 #%% data generating
 
-(y_train - b) / a / x_train ** 2 # quadratic dependency
+(y_train - b) / a / x_train ** 2 # quadratic dependency check
 
 train_dens = len(x_train) / (max(x_train) - min(x_train))
 k = train_dens * (min(x_train) + max(x_train))
@@ -118,13 +117,6 @@ end = time.time()
 
 plt.plot(epochs, MSE_momentum, 'o-', markersize=4)
 plt.plot(epochs, MSE_rmsprop, 'o-', markersize=4)
-plt.legend(('Momentum', 'RMSProp'), loc='upper left')
-plt.xlabel('epoch')
-plt.ylabel('MSE')
-plt.show()
-
-plt.plot(epochs[1:], MSE_momentum[1:], 'o-', markersize=4)
-plt.plot(epochs[1:], MSE_rmsprop[1:], 'o-', markersize=4)
 plt.legend(('Momentum', 'RMSProp'), loc='upper left')
 plt.xlabel('epoch')
 plt.ylabel('MSE')

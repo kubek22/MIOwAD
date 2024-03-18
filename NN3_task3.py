@@ -41,17 +41,14 @@ y_test = df_test["y"]
 plt.plot(x_train, y_train, 'o')
 plt.show()
 
-#%% 
-
-k = 10
-plt.plot(x_train[::k], y_train[::k], 'o')
-plt.plot(x_test, y_test, 'o', markersize=4)
-plt.show()
-
 #%% data thinning
 
+k = 10
 x_train = x_train[::k]
 y_train = y_train[::k]
+
+plt.plot(x_train, y_train, 'o')
+plt.show()
 
 #%%
 
@@ -76,22 +73,6 @@ def count_MSE(net, x_test, y_test, scaler_y=None):
     if scaler_y is not None:
         predictions = scaler_y.inverse_transform(np.array([predictions]))[0]
     return MSE(predictions, y_test)
-
-def plot_weights_on_layers(net, with_bias=True):
-    layers = []
-    norms = []
-    i = 0
-    for weights, biases in zip(net.get_all_weights(), net.get_all_biases()):
-        layers.append(i)
-        i += 1
-        if with_bias:
-            norms.append(np.linalg.norm(np.c_[weights, biases]))
-        else:
-            norms.append(np.linalg.norm(weights))
-    plt.plot(layers, norms, 'o')
-    plt.xlabel('layer')
-    plt.ylabel('Frobenius norm')
-    plt.show()
 
 #%% scaling
 

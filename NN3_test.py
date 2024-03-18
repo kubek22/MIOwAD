@@ -10,6 +10,40 @@ import time
 from sklearn.preprocessing import MinMaxScaler
 import warnings 
 
+#%% data thinning
+
+# eps = 0.001 # 0.01
+# step = 100 # 200
+
+# jump1 = (max(x_train[y_train == -80]) + min(x_train[y_train == 0])) / 2
+
+# step1 = x_train[y_train == -80]
+# step1 = np.concatenate((step1[step1 < jump1 - eps][::step], step1[step1 >= jump1 - eps]))
+# y1 = np.linspace(-80, -80, len(step1))
+
+# jump2 = (max(x_train[y_train == 0]) + min(x_train[y_train == 80])) / 2
+
+# step2 = x_train[y_train == 0]
+# step2 = np.concatenate((step2[(step2 > jump1 + eps) & (step2 < jump2 - eps)][::step], step2[(step2 <= jump1 + eps) | (step2 >= jump2 - eps)]))
+# y2 = np.linspace(0, 0, len(step2))
+
+# jump3 = (max(x_train[y_train == 80]) + min(x_train[y_train == 160])) / 2
+
+# step3 = x_train[y_train == 80]
+# step3 = np.concatenate((step3[(step3 > jump2 + eps) & (step3 < jump3 - eps)][::step], step3[(step3 <= jump2 + eps) | (step3 >= jump3 - eps)]))
+# y3 = np.linspace(80, 80, len(step3))
+
+# step4 = x_train[y_train == 160]
+# step4 = np.concatenate((step4[step4 > jump3 + eps][::step], step4[step4 <= jump3 + eps]))
+# y4 = np.linspace(160, 160, len(step4))
+
+# x_train = np.concatenate((step1, step2, step3, step4))
+# y_train = np.concatenate((y1, y2, y3, y4))
+
+# plt.plot(x_train, y_train, 'o')
+# # plt.plot(x_test, y_test, 'o', markersize=2)
+# plt.show()
+
 #%%
 
 def save(array, file_name):
