@@ -159,7 +159,7 @@ class Net:
             args = args[0]
         return args
 
-    def fit(self, x_train, y_train, batch_size, epochs, alpha, method=None, m_lambda=0, beta=0.5):
+    def fit(self, x_train, y_train, batch_size, epochs, alpha, method=None, m_lambda=0, beta=0.9):
         x_train = np.array(x_train)
         y_train = np.array(y_train)
         n = len(x_train)
@@ -237,6 +237,7 @@ class Net:
     
     def __rmsprop_update(self, exp_g_weights, delta_weights, exp_g_biases, delta_biases, alpha, beta):
         eps = sys.float_info.epsilon * 10 ** 6
+        eps = sys.float_info.epsilon
         for exp_g_w, dw in zip(exp_g_weights, delta_weights):
             exp_g_w *= beta
             exp_g_w += (1 - beta) * (dw / alpha) ** 2

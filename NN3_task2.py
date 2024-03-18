@@ -44,8 +44,8 @@ plt.show()
 
 #%% data thinning
 
-eps = 0.05
-step = 100
+eps = 0.001 # 0.01
+step = 100 # 200
 
 jump1 = (max(x_train[y_train == -80]) + min(x_train[y_train == 0])) / 2
 
@@ -122,14 +122,35 @@ scaler_x = MinMaxScaler(feature_range=(-0.8, 0.8))
 x_train_scaled = scaler_x.fit_transform(np.transpose([x_train]))
 x_test_scaled = scaler_x.transform(np.transpose([x_test]))
 
-scaler_y = MinMaxScaler(feature_range=(-0.8, 0.8))
-scaler_y = MinMaxScaler(feature_range=(-1000, 1000)) # alt
-y_train_scaled = scaler_y.fit_transform(np.transpose([y_train]))
-y_test_scaled = scaler_y.transform(np.transpose([y_test]))
-
-plt.plot(x_train_scaled, y_train_scaled, 'o')
-plt.plot(x_test_scaled, y_test_scaled, 'o', markersize=2)
+plt.plot(x_train_scaled, y_train, 'o')
+plt.plot(x_test_scaled, y_test, 'o', markersize=2)
 plt.show()
+
+#%% momentum
+
+start = time.time()
+
+f = [sigma, sigma, lambda x: x]
+net_momentum = Net(n_neurons=[5, 5, 1], n_inputs=1, functions=f, param_init='xavier')
+
+epoch = 1
+epochs = []
+MSE_momentum = []
+mse_m = math.inf
+e = 1
+
+while mse_m > 3:
+    epochs.append(epoch)
+    epoch += e
+    net_momentum.fit(x_train_scaled, y_train, batch_size=1, epochs=e, alpha=0.001,
+                     method='momentum', m_lambda=0.9)
+    mse_m = count_MSE(net_momentum, x_test_scaled, y_test)
+    MSE_momentum.append(mse_m)
+    print("Current epoch: ", epoch - 1)
+    print("MSE m: ", mse_m)
+    print()
+        
+end = time.time()
 
 #%%
 
@@ -151,9 +172,9 @@ e = 10
 while current_MSE > 3:
     epochs.append(epoch)
     epoch += e
-    net_momentum.fit(x_train_scaled, y_train, batch_size=1, epochs=e, alpha=0.01, # greater
+    net_momentum.fit(x_train_scaled, y_train, batch_size=1, epochs=e, alpha=0.0003, # to modify
                      method='momentum', m_lambda=0.9)
-    net_rmsprop.fit(x_train_scaled, y_train, batch_size=1, epochs=e, alpha=0.01,
+    net_rmsprop.fit(x_train_scaled, y_train, batch_size=1, epochs=e, alpha=0.003,
                 method='rmsprop', beta=0.9)
     mse_m = count_MSE(net_momentum, x_test_scaled, y_test)
     MSE_momentum.append(mse_m)
@@ -167,19 +188,57 @@ while current_MSE > 3:
         
 end = time.time()
 
+#%% results
+
+plt.plot(epochs[0:-1][:100], MSE_momentum[:100], 'o-', markersize=4)
+plt.plot(epochs[0:-1][:100], MSE_rmsprop[:100], 'o-', markersize=4)
+plt.legend(('Momentum', 'RMSprop'), loc='upper left')
+plt.xlabel('epoch')
+plt.ylabel('MSE')
+plt.show()
+
+plt.plot(epochs[0:-1][:100], np.log(MSE_momentum)[:100], 'o-', markersize=4)
+plt.plot(epochs[0:-1][:100], np.log(MSE_rmsprop)[:100], 'o-', markersize=4)
+plt.legend(('Momentum', 'RMSProp'), loc='upper left')
+plt.xlabel('epoch')
+plt.ylabel('ln(MSE)')
+plt.show()
+
+predictions = []
+for x in x_test:
+    predictions.append(net_momentum.predict(x))
+    
+plt.plot(x_test, y_test, 'o', markersize=6)
+plt.plot(x_test, predictions, 'o', markersize=3)
+plt.legend(('test data', 'Momentum prediction'), loc='upper left')
+plt.show()
+
+predictions = []
+for x in x_test:
+    predictions.append(net_rmsprop.predict(x))
+    
+plt.plot(x_test, y_test, 'o', markersize=6)
+plt.plot(x_test, predictions, 'o', markersize=3)
+plt.legend(('test data', 'Momentum prediction'), loc='upper left')
+plt.show()
+
+print("Current epoch: ", epoch - 1)
+print("MSE m: ", mse_m)
+print("MSE r: ", mse_r)
+
 #%%
 
 f = [sigma, lambda x: x]
 net_momentum = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-net_momentum.fit(x_train_scaled, y_train, batch_size=1, epochs=100, alpha=0.001,
-                 method='momentum', m_lambda=0.9)
-mse_m = count_MSE(net_momentum, x_test, y_test, scaler_y)
+net_momentum.fit(x_train_scaled, y_train, batch_size=1, epochs=1000, alpha=0.0003,
+                 method='momentum', m_lambda=0.90)
+mse_m = count_MSE(net_momentum, x_test_scaled, y_test)
 print("MSE m: ", mse_m)
 print()
 
 predictions = []
-for x in x_test:
+for x in x_test_scaled:
     predictions.append(net_momentum.predict(x))
     
 plt.plot(x_test, y_test, 'o')
@@ -187,19 +246,30 @@ plt.plot(x_test, predictions, 'o')
 plt.legend(('test data', 'SGD prediction'), loc='upper left')
 plt.show()
 
+# import pandas as pd
+
+# predictions = []
+# for x in pd.Series(x_train):
+#     predictions.append(net_momentum.predict(x))
+    
+# plt.plot(x_train, y_train, 'o')
+# plt.plot(x_train, predictions, 'o')
+# plt.legend(('test data', 'SGD prediction'), loc='upper left')
+# plt.show()
+
 #%%
 
 f = [sigma, lambda x: x]
 net_rmsprop = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-net_rmsprop.fit(x_train_scaled, y_train, batch_size=1, epochs=100, alpha=0.001,
-                 method='momentum', m_lambda=0.9)
-mse_r = count_MSE(net_rmsprop, x_test, y_test, scaler_y)
-print("MSE m: ", mse_r)
+net_rmsprop.fit(x_train_scaled, y_train, batch_size=1, epochs=1000, alpha=0.0003,
+                 method='rmsprop', beta=0.9)
+mse_r = count_MSE(net_rmsprop, x_test_scaled, y_test)
+print("MSE r: ", mse_r)
 print()
 
 predictions = []
-for x in x_test:
+for x in x_test_scaled:
     predictions.append(net_rmsprop.predict(x))
     
 plt.plot(x_test, y_test, 'o')
