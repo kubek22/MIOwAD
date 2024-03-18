@@ -122,6 +122,10 @@ scaler_x = MinMaxScaler(feature_range=(-0.8, 0.8))
 x_train_scaled = scaler_x.fit_transform(np.transpose([x_train]))
 x_test_scaled = scaler_x.transform(np.transpose([x_test]))
 
+# scaler_y = MinMaxScaler(feature_range=(-1000, 1000))
+# y_train_scaled = scaler_y.fit_transform(np.transpose([y_train]))
+# y_test_scaled = scaler_y.transform(np.transpose([y_test]))
+
 plt.plot(x_train_scaled, y_train, 'o')
 plt.plot(x_test_scaled, y_test, 'o', markersize=2)
 plt.show()
@@ -138,13 +142,21 @@ epochs = []
 MSE_momentum = []
 mse_m = math.inf
 e = 1
+lr = 0.0001
 
 while mse_m > 3:
     epochs.append(epoch)
     epoch += e
-    net_momentum.fit(x_train_scaled, y_train, batch_size=1, epochs=e, alpha=0.001,
-                     method='momentum', m_lambda=0.9)
+    if mse_m < 100:
+        lr = 0.00001
+    # if mse_m < 40:
+    #     lr = 0.000003
+    net_momentum.fit(x_train_scaled, y_train, batch_size=1, epochs=e, alpha=lr,
+                      method='momentum', m_lambda=0.9)
+    # net_momentum.fit(x_train_scaled, y_train_scaled, batch_size=1, epochs=e, alpha=0.0001,
+    #                  method='momentum', m_lambda=0.9)
     mse_m = count_MSE(net_momentum, x_test_scaled, y_test)
+    # mse_m = count_MSE(net_momentum, x_test_scaled, y_test, scaler_y)
     MSE_momentum.append(mse_m)
     print("Current epoch: ", epoch - 1)
     print("MSE m: ", mse_m)
