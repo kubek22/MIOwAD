@@ -204,8 +204,9 @@ plt.xlabel('epoch')
 plt.ylabel('ln(MSE)')
 plt.show()
 
+# test
 predictions = []
-for x in x_test:
+for x in x_test_scaled:
     predictions.append(net_momentum.predict(x))
     
 plt.plot(x_test, y_test, 'o', markersize=6)
@@ -213,8 +214,18 @@ plt.plot(x_test, predictions, 'o', markersize=3)
 plt.legend(('test data', 'Momentum prediction'), loc='upper left')
 plt.show()
 
+# train
 predictions = []
-for x in x_test:
+for x in x_train_scaled:
+    predictions.append(net_momentum.predict(x))
+    
+plt.plot(x_train, y_train, 'o', markersize=6)
+plt.plot(x_train, predictions, 'o', markersize=3)
+plt.legend(('test data', 'Momentum prediction'), loc='upper left')
+plt.show()
+
+predictions = []
+for x in x_test_scaled:
     predictions.append(net_rmsprop.predict(x))
     
 plt.plot(x_test, y_test, 'o', markersize=6)

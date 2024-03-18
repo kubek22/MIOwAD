@@ -236,7 +236,7 @@ class Net:
         return momentum_weights, momentum_biases
     
     def __rmsprop_update(self, exp_g_weights, delta_weights, exp_g_biases, delta_biases, alpha, beta):
-        eps = sys.float_info.epsilon * 10 ** 6
+        eps = sys.float_info.epsilon  # * 10 ** 6
         eps = sys.float_info.epsilon
         for exp_g_w, dw in zip(exp_g_weights, delta_weights):
             exp_g_w *= beta
