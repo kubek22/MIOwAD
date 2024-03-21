@@ -10,6 +10,7 @@ import pickle
 import time
 from sklearn.preprocessing import MinMaxScaler
 import warnings 
+from sklearn.metrics import f1_score
 
 #%%
 
@@ -39,18 +40,6 @@ def predict_class(predictions):
         classes.append(np.where(np.max(p) == p))
     return np.array(classes).reshape(-1)
 
-def MSE(x, y):
-    return sum((x - y) ** 2) / len(x)
-
-def count_MSE(net, x_test, y_test, scaler_y=None):
-    predictions = predict(net, x_test)
-    if scaler_y is not None:
-        predictions = scaler_y.inverse_transform(np.array([predictions]))[0]
-        res = np.array([])
-    # for p in predictions:
-    #     res.add()
-    return MSE(predictions, y_test)
-
 def predict(net, x_data):
     predictions = []
     for x in x_data:
@@ -59,23 +48,17 @@ def predict(net, x_data):
 
 #%%
 
-df_train = read_csv("data/classification/easy-training.csv")
+df_train = read_csv("data/classification/rings3-regular-training.csv")
 df_train.head()
 
 xy_train = df_train[["x", "y"]].to_numpy()
-c_train = df_train["c"]
-c_train.loc[c_train == True] = 1
-c_train.loc[c_train == False] = 0
-c_train = c_train.to_numpy()
+c_train = df_train["c"].to_numpy()
 
-df_test = read_csv("data/classification/easy-test.csv")
+df_test = read_csv("data/classification/rings3-regular-test.csv")
 df_test.head()
 
 xy_test = df_test[["x", "y"]].to_numpy()
-c_test = df_test["c"]
-c_test.loc[c_test == True] = 1
-c_test.loc[c_test == False] = 0
-c_test = c_test.to_numpy()
+c_test= df_test["c"].to_numpy()
 
 #%%
         
@@ -84,24 +67,38 @@ plt.show()
 
 #%%
 
-f = [sigma, "softmax"]
-net = Net(n_neurons=[3, 2], n_inputs=2, functions=f, param_init='xavier', use_softmax=True)
-epoch = 1
+plt.scatter(xy_test[:,0], xy_test[:,1], c=(c_test+0.5)/2)
+plt.show()
+
+#%% scaling
+
+scaler_xy = MinMaxScaler(feature_range=(-0.9, 0.9))
+xy_train_scaled = scaler_xy.fit_transform(xy_train)
+xy_test_scaled = scaler_xy.transform(xy_test)
 
 #%%
 
-epoch += 1
-net.fit(xy_train, c_train, batch_size=1, epochs=1, alpha=0.003,
-                  method='momentum', m_lambda=0.9)
-# mse = count_MSE(net, xy_test, c_test)
-# print("Current epoch: ", epoch - 1)
-# print("MSE: ", mse)
-# print()
+f = [sigma, sigma, "softmax"]
+net = Net(n_neurons=[20, 20, 3], n_inputs=2, functions=f, param_init='xavier', use_softmax=True)
 
 #%%
 
-preds = predict(net, xy_train)
+net.fit(xy_train_scaled, c_train, batch_size=1, epochs=100, alpha=0.005,
+                  method='rmsprop', m_lambda=0.9)
+
+#%%
+
+preds = predict(net, xy_test_scaled)
 classes = predict_class(preds)
 
-plt.scatter(xy_train[:,0], xy_train[:,1], c=(classes+0.5)/2)
+plt.scatter(xy_test[:,0], xy_test[:,1], c=(classes+0.5)/2)
 plt.show()
+
+# f1_score(c_test, classes, average=None)
+f1_score(c_test, classes, average='micro')
+f1_score(c_test, classes, average='macro')
+f1_score(c_test, classes, average='weighted')
+
+#%%
+
+

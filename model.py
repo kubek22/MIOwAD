@@ -4,10 +4,13 @@ from autograd import grad
 import sys
 
 def softmax(x):
-    return np.exp(x) / np.sum(np.exp(x))
+    M = np.max(x)
+    exp_x = np.exp(x - M)
+    return exp_x / np.sum(exp_x)
 
 def df_softmax(x):
-    return softmax(x) * (1 - softmax(x))
+    s_x = softmax(x)
+    return s_x * (1 - s_x)
 
 class Net:
     class Layer:
@@ -21,6 +24,7 @@ class Net:
                 weights = np.array(weights)
             self.weights = weights
             self.n_neurons = self.weights.shape[0]
+            self.use_softmax = use_softmax
             if use_softmax:
                 self.function = softmax
                 self.df_dx = df_softmax
@@ -245,7 +249,7 @@ class Net:
         return momentum_weights, momentum_biases
     
     def __rmsprop_update(self, exp_g_weights, delta_weights, exp_g_biases, delta_biases, alpha, beta):
-        eps = sys.float_info.epsilon  # * 10 ** 6
+        eps = sys.float_info.epsilon
         eps = sys.float_info.epsilon
         for exp_g_w, dw in zip(exp_g_weights, delta_weights):
             exp_g_w *= beta
@@ -265,6 +269,10 @@ class Net:
         y_pred = self.predict(x, save_args=True)
         errors = [0 for i in range(n)]
         last_layer = self.layers[-1]
+        if last_layer.use_softmax:
+            probs = np.linspace(0, 0, last_layer.get_n_neurons())
+            probs[y] = 1
+            y = probs
         errors[-1] = last_layer.df_dx(last_layer.args) * (y_pred - y)
         for i in range(n-2, -1, -1):
             layer = self.layers[i]
