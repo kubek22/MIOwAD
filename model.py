@@ -3,10 +3,15 @@ import math
 from autograd import grad
 import sys
 
+def softmax(x):
+    return np.exp(x) / np.sum(np.exp(x))
+
+def df_softmax(x):
+    return softmax(x) * (1 - softmax(x))
 
 class Net:
     class Layer:
-        def __init__(self, function, weights, bias=0):
+        def __init__(self, function, weights, bias=0, use_softmax=False):
             """
             weights as matrix
             one function for all layer
@@ -16,8 +21,12 @@ class Net:
                 weights = np.array(weights)
             self.weights = weights
             self.n_neurons = self.weights.shape[0]
-            self.function = np.vectorize(function)
-            self.df_dx = np.vectorize(grad(function))
+            if use_softmax:
+                self.function = softmax
+                self.df_dx = df_softmax
+            else:
+                self.function = np.vectorize(function)
+                self.df_dx = np.vectorize(grad(function))
             if type(bias) is list:
                 bias = np.array(bias)
             self.bias = bias
@@ -90,7 +99,8 @@ class Net:
         def set_n_neurons(self, n_neurons):
             self.n_neurons = n_neurons
 
-    def __init__(self, weights=None, functions=None, biases=None, n_neurons=None, n_inputs=None, param_init=None):
+    def __init__(self, weights=None, functions=None, biases=None, 
+                 n_neurons=None, n_inputs=None, param_init=None, use_softmax=False):
         """
         n_neurons - list with numbers of neurons
         weights - list of matrices [layer, node, ancestor]
@@ -99,7 +109,7 @@ class Net:
         if functions is None:
             raise ValueError('Functions parameter missing')
         if weights is not None:
-            self.__initialize(weights, functions, biases)
+            self.__initialize(weights, functions, biases, use_softmax)
             return
         if n_neurons is None or n_inputs is None:
             raise ValueError('Wrong arguments given')
@@ -107,16 +117,15 @@ class Net:
             weights, biases = self.__random_weights(n_neurons, n_inputs)
         if param_init == 'xavier':
             weights, biases = self.__xavier_weights(n_neurons, n_inputs)
-        self.__initialize(weights, functions, biases)
+        self.__initialize(weights, functions, biases, use_softmax)
 
-    def __initialize(self, weights, functions, biases=None):
+    def __initialize(self, weights, functions, biases=None, use_softmax=False):
         n_layers = len(weights)
         if biases is None:
             biases = [0 for _ in range(n_layers)]
-
         if len(functions) == 1 and n_layers > 1:
             functions = [functions for _ in range(n_layers)]
-        self.layers = [self.Layer(functions[i], weights[i], biases[i]) for i in range(n_layers)]
+        self.layers = [self.Layer(functions[i], weights[i], biases[i], use_softmax) for i in range(n_layers)]
 
     def __random_weights(self, n_neurons, n_inputs, scales=None, shifts=None):
         n_layers = len(n_neurons)
