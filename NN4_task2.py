@@ -2,14 +2,10 @@
 
 import numpy as np
 from pandas import read_csv
-import pandas as pd
 import matplotlib.pyplot as plt
 from model import Net
 import math
 import pickle
-import time
-from sklearn.preprocessing import MinMaxScaler
-import warnings 
 from sklearn.metrics import f1_score
 
 #%%
@@ -40,18 +36,6 @@ def predict_class(predictions):
         classes.append(np.where(np.max(p) == p))
     return np.array(classes).reshape(-1)
 
-# def MSE(x, y):
-#     return sum((x - y) ** 2) / len(x)
-
-# def count_MSE(net, x_test, y_test, scaler_y=None):
-#     predictions = predict(net, x_test)
-#     if scaler_y is not None:
-#         predictions = scaler_y.inverse_transform(np.array([predictions]))[0]
-#         res = np.array([])
-#     # for p in predictions:
-#     #     res.add()
-#     return MSE(predictions, y_test)
-
 def predict(net, x_data):
     predictions = []
     for x in x_data:
@@ -81,25 +65,56 @@ plt.show()
 
 #%%
 
-plt.scatter(xy_test[:,0], xy_test[:,1], c=(c_test+0.5)/2)
-plt.show()
-
-#%%
-
 f = [sigma, "softmax"]
-net = Net(n_neurons=[3, 2], n_inputs=2, functions=f, param_init='xavier', use_softmax=True)
+net_softmax = Net(n_neurons=[3, 2], n_inputs=2, functions=f, param_init='xavier', use_softmax=True)
+f = [sigma, lambda x: x]
+net_basic = Net(n_neurons=[3, 2], n_inputs=2, functions=f, param_init='xavier', classification=True)
 
 #%%
 
-net.fit(xy_train, c_train, batch_size=1, epochs=20, alpha=0.003,
-                  method='momentum', m_lambda=0.9)
-
+epoch = 1
+score = 0
+scores_softmax = []
+scores_basic = []
+epochs = []
+while score < 0.99:
+    epochs.append(epoch)
+    epoch += 1
+    net_softmax.fit(xy_train, c_train, batch_size=1, epochs=1, alpha=0.003,
+                      method='momentum', m_lambda=0.9)
+    net_basic.fit(xy_train, c_train, batch_size=1, epochs=1, alpha=0.003,
+                      method='momentum', m_lambda=0.9)
+    preds = predict(net_softmax, xy_test)
+    classes = predict_class(preds)
+    score = f1_score(c_test, classes)
+    scores_softmax.append(score)
+    preds = predict(net_basic, xy_test)
+    classes = predict_class(preds)
+    scores_basic.append(f1_score(c_test, classes))
+    
 #%%
 
-preds = predict(net, xy_test)
-classes = predict_class(preds)
-
-plt.scatter(xy_test[:,0], xy_test[:,1], c=(classes+0.5)/2)
+plt.plot(epochs, scores_softmax, 'o-')
+plt.plot(epochs, scores_basic, 'o-')
+plt.legend(('softmax', 'basic'), loc='upper left')
+plt.xticks(np.arange(min(epochs), max(epochs) + 1, 1.0))
+plt.xlabel('epoch')
+plt.ylabel('F1 score')
 plt.show()
 
-f1_score(c_test, classes)
+print('Current epoch: ', epoch - 1)
+print('F1 score softmax: ', scores_softmax[-1])
+print('F1 score basic: ', scores_basic[-1])
+
+#%%
+
+print(net_softmax.get_all_weights())
+# [array([[-0.4828805 ,  0.39143151],
+#         [ 0.38515477, -0.39330314],
+#         [-0.72477795,  0.72480169]]),
+#  array([[-0.47592309, -1.05047658,  1.09867105],
+#         [-1.64283493,  0.4662828 , -0.7698204 ]])]
+
+print(net_softmax.get_all_biases())
+# [array([0.00760212, 0.92893185, 0.19245558]), array([0.15982369, 0.80760132])]
+

@@ -104,12 +104,17 @@ class Net:
             self.n_neurons = n_neurons
 
     def __init__(self, weights=None, functions=None, biases=None, 
-                 n_neurons=None, n_inputs=None, param_init=None, use_softmax=False):
+                 n_neurons=None, n_inputs=None, param_init=None, 
+                 use_softmax=False, classification=False):
         """
         n_neurons - list with numbers of neurons
         weights - list of matrices [layer, node, ancestor]
         functions - list of functions, one per layer
         """
+        self.use_softmax = use_softmax
+        self.classification = classification
+        if use_softmax:
+            self.classification = True
         if functions is None:
             raise ValueError('Functions parameter missing')
         if weights is not None:
@@ -129,7 +134,9 @@ class Net:
             biases = [0 for _ in range(n_layers)]
         if len(functions) == 1 and n_layers > 1:
             functions = [functions for _ in range(n_layers)]
-        self.layers = [self.Layer(functions[i], weights[i], biases[i], use_softmax) for i in range(n_layers)]
+        last = n_layers - 1 
+        self.layers = [self.Layer(functions[i], weights[i], biases[i]) for i in range(last)]
+        self.layers.append(self.Layer(functions[last], weights[last], biases[last], use_softmax))
 
     def __random_weights(self, n_neurons, n_inputs, scales=None, shifts=None):
         n_layers = len(n_neurons)
@@ -173,6 +180,12 @@ class Net:
         return args
 
     def fit(self, x_train, y_train, batch_size, epochs, alpha, method=None, m_lambda=0, beta=0.9):
+        """
+        Parameters
+        ----------
+        y_train :
+            during classification, classes must be encoded to consistent integers starting with 0
+        """
         x_train = np.array(x_train)
         y_train = np.array(y_train)
         n = len(x_train)
@@ -269,7 +282,7 @@ class Net:
         y_pred = self.predict(x, save_args=True)
         errors = [0 for i in range(n)]
         last_layer = self.layers[-1]
-        if last_layer.use_softmax:
+        if self.classification:
             probs = np.linspace(0, 0, last_layer.get_n_neurons())
             probs[y] = 1
             y = probs
