@@ -12,6 +12,10 @@ def df_softmax(x):
     s_x = softmax(x)
     return s_x * (1 - s_x)
 
+def df_tanh(x):
+    return 1 - x ** 2
+
+
 class Net:
     class Layer:
         def __init__(self, function, weights, bias=0, use_softmax=False):
@@ -25,9 +29,12 @@ class Net:
             self.weights = weights
             self.n_neurons = self.weights.shape[0]
             self.use_softmax = use_softmax
-            if use_softmax:
+            if use_softmax or function == 'softmax':
                 self.function = softmax
                 self.df_dx = df_softmax
+            elif function == 'tanh':
+                self.function = np.tanh
+                self.df_dx = np.vectorize(grad(df_tanh))
             else:
                 self.function = np.vectorize(function)
                 self.df_dx = np.vectorize(grad(function))
@@ -286,7 +293,10 @@ class Net:
             probs = np.linspace(0, 0, last_layer.get_n_neurons())
             probs[y] = 1
             y = probs
-        errors[-1] = last_layer.df_dx(last_layer.args) * (y_pred - y)
+        if self.use_softmax:
+            errors[-1] = y_pred - y
+        else:
+            errors[-1] = last_layer.df_dx(last_layer.args) * (y_pred - y)
         for i in range(n-2, -1, -1):
             layer = self.layers[i]
             next_layer = self.layers[i+1]
