@@ -128,12 +128,15 @@ plt.show()
 f = [sigma, lambda x: x]
 net_sigma1 = load_net('weights', 'biases', f)
 
+#%%
+
+max_epochs = 1000
+
 #%% one layer sigmoid
 
 f = [sigma, lambda x: x]
 net_sigma1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-max_epochs = 100
 MSE_results = []
 
 warnings.filterwarnings('ignore') 
@@ -168,7 +171,6 @@ plot_results('sigma1', save=True, name='plot_sigma1')
 f = [lambda x: x, lambda x: x]
 net_linear1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-max_epochs = 100
 MSE_results = []
 
 warnings.filterwarnings('ignore') 
@@ -198,14 +200,13 @@ plot_results('linear1', save=True, name='plot_linear1')
 f = ['tanh', lambda x: x]
 net_tanh1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-max_epochs = 100
 MSE_results = []
 
 warnings.filterwarnings('ignore') 
 start_time = time.time()
 
 for i in range(max_epochs):
-    net_tanh1.fit(x_train_scaled, y_train_scaled, batch_size=1, epochs=1, alpha=0.003, method='momentum')
+    net_tanh1.fit(x_train_scaled, y_train_scaled, batch_size=1, epochs=1, alpha=0.0003, method='momentum')
     mse = count_MSE(net_tanh1, x_test_scaled, y_test, scaler_y)
     MSE_results.append(mse)
     print("epoch: ", i + 1)
@@ -228,7 +229,6 @@ plot_results('tanh1', save=True, name='plot_tanh1')
 f = [ReLU, lambda x: x]
 net_relu1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
-max_epochs = 100
 MSE_results = []
 
 warnings.filterwarnings('ignore') 
