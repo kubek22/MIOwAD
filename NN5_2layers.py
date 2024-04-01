@@ -85,57 +85,15 @@ plt.plot(x_train_scaled, y_train_scaled, 'o')
 plt.plot(x_test_scaled, y_test_scaled, 'o')
 plt.show()
 
-#%% sigmoid test
-# it is better to compare functions, not architectures
+#%% parameters
 
-# f1 = [sigma, lambda x: x]
-# f2 = [sigma, sigma, lambda x: x]
-# f3 = [sigma, sigma, sigma, lambda x: x]
+max_epochs = 500
+k = 5
 
-# k = 10
-# net1 = Net(n_neurons=[k, 1], n_inputs=1, functions=f1, param_init='xavier')
-# net2 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f2, param_init='xavier')
-# net3 = Net(n_neurons=[k, k, k, 1], n_inputs=1, functions=f3, param_init='xavier')
+#%% two layer sigmoid
 
-# max_epochs = 10
-# epochs = np.arange(1, max_epochs + 1)
-# MSE1 = []
-# MSE2 = []
-# MSE3 = []
-
-# warnings.filterwarnings('ignore') 
-# start_time = time.time()
-
-# for e in epochs:
-#     net1.fit(x_train_scaled, y_train_scaled, 1, 1, alpha=0.003, method='momentum')
-#     net2.fit(x_train_scaled, y_train_scaled, 1, 1, alpha=0.003, method='momentum')
-#     net3.fit(x_train_scaled, y_train_scaled, 1, 1, alpha=0.003, method='momentum')
-#     mse1 = count_MSE(net1, x_test_scaled, y_test, scaler_y)
-#     mse2 = count_MSE(net2, x_test_scaled, y_test, scaler_y)
-#     mse3 = count_MSE(net3, x_test_scaled, y_test, scaler_y)
-#     MSE1.append(mse1)
-#     MSE2.append(mse2)
-#     MSE3.append(mse3)
-#     print("epoch: ", e)
-#     print("1: ", mse1)
-#     print("2: ", mse2)
-#     print("3: ", mse3)
-    
-# end_time = time.time()
-
-#%% load net
-
-f = [sigma, lambda x: x]
-net_sigma1 = load_net('weights', 'biases', f)
-
-#%%
-
-max_epochs = 1000
-
-#%% one layer sigmoid
-
-f = [sigma, lambda x: x]
-net_sigma1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
+f = [sigma, sigma, lambda x: x]
+net_sigma1 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
 
@@ -154,22 +112,17 @@ end_time = time.time()
 
 #%% save results
 
-save(MSE_results, 'sigma1')
-
-#%% save model
-
-save(net_sigma1.get_all_weights(), 'weights')
-save(net_sigma1.get_all_biases(), 'biases')
+save(MSE_results, 'sigma2')
 
 #%% results
 
-plot_results('sigma1')
-plot_results('sigma1', save=True, name='plot_sigma1')
+plot_results('sigma2')
+plot_results('sigma2', save=True, name='plot_sigma2')
 
-#%% one layer linear
+#%% two layer linear
 
-f = [lambda x: x, lambda x: x]
-net_linear1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
+f = [lambda x: x, lambda x: x, lambda x: x]
+net_linear1 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
 
@@ -188,17 +141,17 @@ end_time = time.time()
 
 #%% save results
 
-save(MSE_results, 'linear1')
+save(MSE_results, 'linear2')
 
 #%% results
 
-plot_results('linear1')
-plot_results('linear1', save=True, name='plot_linear1')
+plot_results('linear2')
+plot_results('linear2', save=True, name='plot_linear2')
 
-#%% one layer tanh
+#%% two layer tanh
 
-f = ['tanh', lambda x: x]
-net_tanh1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
+f = ['tanh', 'tanh', lambda x: x]
+net_tanh1 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
 
@@ -217,17 +170,17 @@ end_time = time.time()
 
 #%% save results
 
-save(MSE_results, 'tanh1')
+save(MSE_results, 'tanh2')
 
 #%% results
 
-plot_results('tanh1')
-plot_results('tanh1', save=True, name='plot_tanh1')
+plot_results('tanh2')
+plot_results('tanh2', save=True, name='plot_tanh2')
 
-#%% one layer relu
+#%% two layer relu
 
-f = [ReLU, lambda x: x]
-net_relu1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
+f = [ReLU, ReLU, lambda x: x]
+net_relu1 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
 
@@ -246,12 +199,9 @@ end_time = time.time()
 
 #%% save results
 
-save(MSE_results, 'relu1')
+save(MSE_results, 'relu2')
 
 #%% results
 
-plot_results('relu1')
-plot_results('relu1', save=True, name='plot_relu1')
-    
-
-    
+plot_results('relu2')
+plot_results('relu2', save=True, name='plot_relu2')

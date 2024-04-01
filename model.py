@@ -13,8 +13,7 @@ def df_softmax(x):
     return s_x * (1 - s_x)
 
 def df_tanh(x):
-    return 1 - x ** 2
-
+    return 1 - np.tanh(x) ** 2
 
 class Net:
     class Layer:
@@ -34,7 +33,7 @@ class Net:
                 self.df_dx = df_softmax
             elif function == 'tanh':
                 self.function = np.tanh
-                self.df_dx = np.vectorize(grad(df_tanh))
+                self.df_dx = df_tanh
             else:
                 self.function = np.vectorize(function)
                 self.df_dx = np.vectorize(grad(function))
