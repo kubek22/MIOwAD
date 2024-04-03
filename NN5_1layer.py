@@ -85,49 +85,6 @@ plt.plot(x_train_scaled, y_train_scaled, 'o')
 plt.plot(x_test_scaled, y_test_scaled, 'o')
 plt.show()
 
-#%% sigmoid test
-# it is better to compare functions, not architectures
-
-# f1 = [sigma, lambda x: x]
-# f2 = [sigma, sigma, lambda x: x]
-# f3 = [sigma, sigma, sigma, lambda x: x]
-
-# k = 10
-# net1 = Net(n_neurons=[k, 1], n_inputs=1, functions=f1, param_init='xavier')
-# net2 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f2, param_init='xavier')
-# net3 = Net(n_neurons=[k, k, k, 1], n_inputs=1, functions=f3, param_init='xavier')
-
-# max_epochs = 10
-# epochs = np.arange(1, max_epochs + 1)
-# MSE1 = []
-# MSE2 = []
-# MSE3 = []
-
-# warnings.filterwarnings('ignore') 
-# start_time = time.time()
-
-# for e in epochs:
-#     net1.fit(x_train_scaled, y_train_scaled, 1, 1, alpha=0.003, method='momentum')
-#     net2.fit(x_train_scaled, y_train_scaled, 1, 1, alpha=0.003, method='momentum')
-#     net3.fit(x_train_scaled, y_train_scaled, 1, 1, alpha=0.003, method='momentum')
-#     mse1 = count_MSE(net1, x_test_scaled, y_test, scaler_y)
-#     mse2 = count_MSE(net2, x_test_scaled, y_test, scaler_y)
-#     mse3 = count_MSE(net3, x_test_scaled, y_test, scaler_y)
-#     MSE1.append(mse1)
-#     MSE2.append(mse2)
-#     MSE3.append(mse3)
-#     print("epoch: ", e)
-#     print("1: ", mse1)
-#     print("2: ", mse2)
-#     print("3: ", mse3)
-    
-# end_time = time.time()
-
-#%% load net
-
-f = [sigma, lambda x: x]
-net_sigma1 = load_net('weights', 'biases', f)
-
 #%%
 
 max_epochs = 1000
@@ -253,5 +210,24 @@ save(MSE_results, 'relu1')
 plot_results('relu1')
 plot_results('relu1', save=True, name='plot_relu1')
     
+#%% summary
 
+MSE_sigmoid = read('sigma1')
+MSE_linear = read('linear1')
+MSE_tanh = read('tanh1')
+MSE_relu = read('relu1')
+epochs = np.arange(1, max_epochs + 1)
+
+plt.plot(epochs, MSE_sigmoid)
+plt.plot(epochs, MSE_linear)
+plt.plot(epochs, MSE_tanh)
+plt.plot(epochs, MSE_relu)
+plt.legend(('sigmoid', 'linear', 'tanh','ReLU'), loc='upper right')
+plt.xlabel('epoch')
+plt.ylabel('MSE')
+plt.show()  
     
+print('min sigmoid MSE: ', min(MSE_sigmoid))
+print('min linear MSE: ', min(MSE_linear))
+print('min tanh MSE: ', min(MSE_tanh))
+print('min ReLU MSE: ', min(MSE_relu))

@@ -87,13 +87,13 @@ plt.show()
 
 #%% parameters
 
-max_epochs = 500
+max_epochs = 300
 k = 5
 
-#%% two layer sigmoid
+#%% three layer sigmoid
 
-f = [sigma, sigma, lambda x: x]
-net_sigma1 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
+f = [sigma, sigma, sigma, lambda x: x]
+net_sigma1 = Net(n_neurons=[k, k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
 
@@ -112,17 +112,17 @@ end_time = time.time()
 
 #%% save results
 
-save(MSE_results, 'sigma2')
+save(MSE_results, 'sigma3')
 
 #%% results
 
-plot_results('sigma2')
-plot_results('sigma2', save=True, name='plot_sigma2')
+plot_results('sigma3')
+plot_results('sigma3', save=True, name='plot_sigma3')
 
-#%% two layer linear
+#%% three layer linear
 
-f = [lambda x: x, lambda x: x, lambda x: x]
-net_linear1 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
+f = [lambda x: x, lambda x: x, lambda x: x, lambda x: x]
+net_linear1 = Net(n_neurons=[k, k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
 
@@ -141,17 +141,17 @@ end_time = time.time()
 
 #%% save results
 
-save(MSE_results, 'linear2')
+save(MSE_results, 'linear3')
 
 #%% results
 
-plot_results('linear2')
-plot_results('linear2', save=True, name='plot_linear2')
+plot_results('linear3')
+plot_results('linear3', save=True, name='plot_linear3')
 
-#%% two layer tanh
+#%% three layer tanh
 
-f = ['tanh', 'tanh', lambda x: x]
-net_tanh1 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
+f = ['tanh', 'tanh', 'tanh', lambda x: x]
+net_tanh1 = Net(n_neurons=[k, k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
 
@@ -170,17 +170,17 @@ end_time = time.time()
 
 #%% save results
 
-save(MSE_results, 'tanh2')
+save(MSE_results, 'tanh3')
 
 #%% results
 
-plot_results('tanh2')
-plot_results('tanh2', save=True, name='plot_tanh2')
+plot_results('tanh3')
+plot_results('tanh3', save=True, name='plot_tanh3')
 
-#%% two layer relu
+#%% three layer relu
 
-f = [ReLU, ReLU, lambda x: x]
-net_relu1 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
+f = [ReLU, ReLU, ReLU, lambda x: x]
+net_relu1 = Net(n_neurons=[k, k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
 
@@ -199,19 +199,19 @@ end_time = time.time()
 
 #%% save results
 
-save(MSE_results, 'relu2')
+save(MSE_results, 'relu3')
 
 #%% results
 
-plot_results('relu2')
-plot_results('relu2', save=True, name='plot_relu2')
+plot_results('relu3')
+plot_results('relu3', save=True, name='plot_relu3')
 
 #%% summary
 
-MSE_sigmoid = read('sigma2')
-MSE_linear = read('linear2')
-MSE_tanh = read('tanh2')
-MSE_relu = read('relu2')
+MSE_sigmoid = read('sigma3')
+MSE_linear = read('linear3')
+MSE_tanh = read('tanh3')
+MSE_relu = read('relu3')
 epochs = np.arange(1, max_epochs + 1)
 
 plt.plot(epochs, MSE_sigmoid)

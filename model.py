@@ -15,6 +15,31 @@ def df_softmax(x):
 def df_tanh(x):
     return 1 - np.tanh(x) ** 2
 
+def sigmoid(x):
+    if x > 0:
+        return 1 / (1 + math.e ** ((-1) * x))
+    return math.e ** x / (1 + math.e ** x)
+
+def df_sigmoid(x):
+    s_x = sigmoid(x)
+    return s_x * (1 - s_x)
+
+def linear(x):
+    return x
+
+def df_linear(x):
+    return 1
+
+def ReLU(x):
+    if x > 0:
+        return x
+    return 0.0
+
+def df_ReLU(x):
+    if x > 0:
+        return 1.0
+    return 0.0
+
 class Net:
     class Layer:
         def __init__(self, function, weights, bias=0, use_softmax=False):
@@ -34,6 +59,15 @@ class Net:
             elif function == 'tanh':
                 self.function = np.tanh
                 self.df_dx = df_tanh
+            elif function == 'sigmoid':
+                self.function = sigmoid
+                self.df_dx = df_sigmoid
+            elif function == 'linear':
+                self.function = linear
+                self.df_dx = df_linear
+            elif function == 'relu':
+                self.function = ReLU
+                self.df_dx = df_ReLU
             else:
                 self.function = np.vectorize(function)
                 self.df_dx = np.vectorize(grad(function))
