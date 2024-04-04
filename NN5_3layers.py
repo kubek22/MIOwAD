@@ -227,3 +227,40 @@ print('min sigmoid MSE: ', min(MSE_sigmoid))
 print('min linear MSE: ', min(MSE_linear))
 print('min tanh MSE: ', min(MSE_tanh))
 print('min ReLU MSE: ', min(MSE_relu))
+
+#%% all results
+
+MSE_sigmoid1 = read('sigma1')[:300]
+MSE_tanh1 = read('tanh1')[:300]
+MSE_relu1 = read('relu1')[:300]
+
+MSE_sigmoid2 = read('sigma2')[:300]
+MSE_tanh2 = read('tanh2')[:300]
+MSE_relu2 = read('relu2')[:300]
+
+MSE_sigmoid3 = read('sigma3')
+MSE_tanh3 = read('tanh3')
+MSE_relu3 = read('relu3')
+
+epochs = np.arange(1, 300 + 1)
+
+plt.plot(epochs, MSE_sigmoid1)
+plt.plot(epochs, MSE_tanh1)
+plt.plot(epochs, MSE_relu1)
+
+plt.plot(epochs, MSE_sigmoid2)
+plt.plot(epochs, MSE_tanh2)
+plt.plot(epochs, MSE_relu2)
+
+plt.plot(epochs, MSE_sigmoid3)
+plt.plot(epochs, MSE_tanh3)
+plt.plot(epochs, MSE_relu3)
+
+plt.legend(('sigmoid1', 'tanh1','ReLU1',
+            'sigmoid2', 'tanh2','ReLU2',
+            'sigmoid3', 'tanh3','ReLU3'), loc='upper right')
+plt.xlabel('epoch')
+plt.ylabel('MSE')
+
+plt.show()  
+

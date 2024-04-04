@@ -19,9 +19,16 @@ def sigmoid(x):
     if x > 0:
         return 1 / (1 + math.e ** ((-1) * x))
     return math.e ** x / (1 + math.e ** x)
+    # x = np.array(x)
+    # i_plus = np.where(x > 0)
+    # i_minus = np.where(x <= 0)
+    # x[i_plus] = 1 / (1 + math.e ** ((-1) * x[i_plus]))
+    # x[i_minus] = math.e ** x / (1 + math.e ** x[i_minus])
+    # return x
 
 def df_sigmoid(x):
-    s_x = sigmoid(x)
+    s_x = np.vectorize(sigmoid)(x)
+    # s_x = sigmoid(x)
     return s_x * (1 - s_x)
 
 def linear(x):
@@ -60,14 +67,14 @@ class Net:
                 self.function = np.tanh
                 self.df_dx = df_tanh
             elif function == 'sigmoid':
-                self.function = sigmoid
+                self.function = np.vectorize(sigmoid)
                 self.df_dx = df_sigmoid
             elif function == 'linear':
                 self.function = linear
-                self.df_dx = df_linear
+                self.df_dx = np.vectorize(df_linear)
             elif function == 'relu':
-                self.function = ReLU
-                self.df_dx = df_ReLU
+                self.function = np.vectorize(ReLU)
+                self.df_dx = np.vectorize(df_ReLU)
             else:
                 self.function = np.vectorize(function)
                 self.df_dx = np.vectorize(grad(function))

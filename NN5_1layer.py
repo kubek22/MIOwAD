@@ -91,7 +91,7 @@ max_epochs = 1000
 
 #%% one layer sigmoid
 
-f = [sigma, lambda x: x]
+f = ['sigmoid', lambda x: x]
 net_sigma1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
@@ -125,7 +125,7 @@ plot_results('sigma1', save=True, name='plot_sigma1')
 
 #%% one layer linear
 
-f = [lambda x: x, lambda x: x]
+f = ['linear', lambda x: x]
 net_linear1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
@@ -183,7 +183,7 @@ plot_results('tanh1', save=True, name='plot_tanh1')
 
 #%% one layer relu
 
-f = [ReLU, lambda x: x]
+f = ['relu', lambda x: x]
 net_relu1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
