@@ -81,10 +81,6 @@ scaler_y = MinMaxScaler(feature_range=(-0.9, 0.9))
 y_train_scaled = scaler_y.fit_transform(np.transpose([y_train]))
 y_test_scaled = scaler_y.transform(np.transpose([y_test]))
 
-plt.plot(x_train_scaled, y_train_scaled, 'o')
-plt.plot(x_test_scaled, y_test_scaled, 'o')
-plt.show()
-
 #%% parameters
 
 max_epochs = 500
@@ -92,7 +88,7 @@ k = 5
 
 #%% two layer sigmoid
 
-f = [sigma, sigma, lambda x: x]
+f = ['sigmoid', 'sigmoid', 'linear']
 net_sigma1 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
@@ -121,7 +117,7 @@ plot_results('sigma2', save=True, name='plot_sigma2')
 
 #%% two layer linear
 
-f = [lambda x: x, lambda x: x, lambda x: x]
+f = ['linear', 'linear', 'linear']
 net_linear1 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
@@ -150,7 +146,7 @@ plot_results('linear2', save=True, name='plot_linear2')
 
 #%% two layer tanh
 
-f = ['tanh', 'tanh', lambda x: x]
+f = ['tanh', 'tanh', 'linear']
 net_tanh1 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
@@ -179,7 +175,7 @@ plot_results('tanh2', save=True, name='plot_tanh2')
 
 #%% two layer relu
 
-f = [ReLU, ReLU, lambda x: x]
+f = ['relu', 'relu', 'linear']
 net_relu1 = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []

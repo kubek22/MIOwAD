@@ -81,10 +81,6 @@ scaler_y = MinMaxScaler(feature_range=(-0.9, 0.9))
 y_train_scaled = scaler_y.fit_transform(np.transpose([y_train]))
 y_test_scaled = scaler_y.transform(np.transpose([y_test]))
 
-plt.plot(x_train_scaled, y_train_scaled, 'o')
-plt.plot(x_test_scaled, y_test_scaled, 'o')
-plt.show()
-
 #%% parameters
 
 max_epochs = 300
@@ -92,7 +88,7 @@ k = 5
 
 #%% three layer sigmoid
 
-f = [sigma, sigma, sigma, lambda x: x]
+f = ['sigmoid', 'sigmoid', 'sigmoid', 'linear']
 net_sigma1 = Net(n_neurons=[k, k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
@@ -121,7 +117,7 @@ plot_results('sigma3', save=True, name='plot_sigma3')
 
 #%% three layer linear
 
-f = [lambda x: x, lambda x: x, lambda x: x, lambda x: x]
+f = ['linear', 'linear', 'linear', 'linear']
 net_linear1 = Net(n_neurons=[k, k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
@@ -150,7 +146,7 @@ plot_results('linear3', save=True, name='plot_linear3')
 
 #%% three layer tanh
 
-f = ['tanh', 'tanh', 'tanh', lambda x: x]
+f = ['tanh', 'tanh', 'tanh', 'linear']
 net_tanh1 = Net(n_neurons=[k, k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
@@ -179,7 +175,7 @@ plot_results('tanh3', save=True, name='plot_tanh3')
 
 #%% three layer relu
 
-f = [ReLU, ReLU, ReLU, lambda x: x]
+f = ['relu', 'relu', 'relu', 'linear']
 net_relu1 = Net(n_neurons=[k, k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
@@ -230,19 +226,20 @@ print('min ReLU MSE: ', min(MSE_relu))
 
 #%% all results
 
-MSE_sigmoid1 = read('sigma1')[:300]
-MSE_tanh1 = read('tanh1')[:300]
-MSE_relu1 = read('relu1')[:300]
+length = 300
+MSE_sigmoid1 = read('sigma1')[:length]
+MSE_tanh1 = read('tanh1')[:length]
+MSE_relu1 = read('relu1')[:length]
 
-MSE_sigmoid2 = read('sigma2')[:300]
-MSE_tanh2 = read('tanh2')[:300]
-MSE_relu2 = read('relu2')[:300]
+MSE_sigmoid2 = read('sigma2')[:length]
+MSE_tanh2 = read('tanh2')[:length]
+MSE_relu2 = read('relu2')[:length]
 
 MSE_sigmoid3 = read('sigma3')
 MSE_tanh3 = read('tanh3')
 MSE_relu3 = read('relu3')
 
-epochs = np.arange(1, 300 + 1)
+epochs = np.arange(1, length + 1)
 
 plt.plot(epochs, MSE_sigmoid1)
 plt.plot(epochs, MSE_tanh1)

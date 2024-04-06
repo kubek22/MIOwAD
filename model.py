@@ -19,16 +19,9 @@ def sigmoid(x):
     if x > 0:
         return 1 / (1 + math.e ** ((-1) * x))
     return math.e ** x / (1 + math.e ** x)
-    # x = np.array(x)
-    # i_plus = np.where(x > 0)
-    # i_minus = np.where(x <= 0)
-    # x[i_plus] = 1 / (1 + math.e ** ((-1) * x[i_plus]))
-    # x[i_minus] = math.e ** x / (1 + math.e ** x[i_minus])
-    # return x
 
 def df_sigmoid(x):
     s_x = np.vectorize(sigmoid)(x)
-    # s_x = sigmoid(x)
     return s_x * (1 - s_x)
 
 def linear(x):

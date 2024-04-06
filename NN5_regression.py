@@ -77,33 +77,59 @@ scaler_x = MinMaxScaler(feature_range=(-0.8, 0.8))
 x_train_scaled = scaler_x.fit_transform(np.transpose([x_train]))
 x_test_scaled = scaler_x.transform(np.transpose([x_test]))
 
-plt.plot(x_train_scaled, y_train, 'o')
-plt.plot(x_test_scaled, y_test, 'o', markersize=2)
-plt.show()
-
 #%% parameters
 
 k = 5
-max_epochs = 10
+max_epochs = 300
 
-#%% two layer tanh
+#%% two layer tanh vs. three layer relu
 
 f = ['tanh', 'tanh', 'linear']
 net_tanh = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
-MSE_results = []
+f = ['relu', 'relu', 'relu', 'linear']
+net_relu = Net(n_neurons=[k, k, k, 1], n_inputs=1, functions=f, param_init='xavier')
+
+
+MSE_tanh = []
+MSE_relu = []
 
 warnings.filterwarnings('ignore') 
 start_time = time.time()
 
 for i in range(max_epochs):
-    net_tanh.fit(x_train_scaled, y_train, batch_size=1, epochs=1, alpha=0.003, method='momentum')
-    mse = count_MSE(net_tanh, x_test_scaled, y_test)
-    MSE_results.append(mse)
+    net_tanh.fit(x_train_scaled, y_train, batch_size=1, epochs=1, alpha=0.001, method='rmsprop')
+    mse_tanh = count_MSE(net_tanh, x_test_scaled, y_test)
+    MSE_tanh.append(mse_tanh)
+    net_relu.fit(x_train_scaled, y_train, batch_size=1, epochs=1, alpha=0.001, method='rmsprop')
+    mse_relu = count_MSE(net_relu, x_test_scaled, y_test)
+    MSE_relu.append(mse_relu)
     print("epoch: ", i + 1)
-    print("mse: ", mse)
+    print("mse tanh : ", mse_tanh)
+    print("mse relu : ", mse_relu)
     print()
     
 end_time = time.time()
 
-#%% relu3
+#%% save results
+
+save(MSE_tanh, 'reg_tanh2')
+save(MSE_relu, 'reg_relu3')
+
+#%% summary
+
+MSE_tanh = read('reg_tanh2')
+MSE_relu = read('reg_relu3')
+epochs = np.arange(1, max_epochs + 1)
+
+plt.plot(epochs, MSE_tanh)
+plt.plot(epochs, MSE_relu)
+plt.legend(('tanh','ReLU'), loc='upper right')
+plt.xlabel('epoch')
+plt.ylabel('MSE')
+plt.show()  
+
+print('min tanh MSE: ', min(MSE_tanh))
+print('min ReLU MSE: ', min(MSE_relu))
+
+

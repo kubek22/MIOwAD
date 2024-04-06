@@ -81,17 +81,13 @@ scaler_y = MinMaxScaler(feature_range=(-0.9, 0.9))
 y_train_scaled = scaler_y.fit_transform(np.transpose([y_train]))
 y_test_scaled = scaler_y.transform(np.transpose([y_test]))
 
-plt.plot(x_train_scaled, y_train_scaled, 'o')
-plt.plot(x_test_scaled, y_test_scaled, 'o')
-plt.show()
-
 #%%
 
 max_epochs = 1000
 
 #%% one layer sigmoid
 
-f = ['sigmoid', lambda x: x]
+f = ['sigmoid', 'linear']
 net_sigma1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
@@ -113,11 +109,6 @@ end_time = time.time()
 
 save(MSE_results, 'sigma1')
 
-#%% save model
-
-save(net_sigma1.get_all_weights(), 'weights')
-save(net_sigma1.get_all_biases(), 'biases')
-
 #%% results
 
 plot_results('sigma1')
@@ -125,7 +116,7 @@ plot_results('sigma1', save=True, name='plot_sigma1')
 
 #%% one layer linear
 
-f = ['linear', lambda x: x]
+f = ['linear', 'linear']
 net_linear1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
@@ -154,7 +145,7 @@ plot_results('linear1', save=True, name='plot_linear1')
 
 #%% one layer tanh
 
-f = ['tanh', lambda x: x]
+f = ['tanh', 'linear']
 net_tanh1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
@@ -183,7 +174,7 @@ plot_results('tanh1', save=True, name='plot_tanh1')
 
 #%% one layer relu
 
-f = ['relu', lambda x: x]
+f = ['relu', 'linear']
 net_relu1 = Net(n_neurons=[5, 1], n_inputs=1, functions=f, param_init='xavier')
 
 MSE_results = []
