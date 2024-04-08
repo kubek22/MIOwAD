@@ -219,7 +219,7 @@ class Net:
             args = args[0]
         return args
 
-    def fit(self, x_train, y_train, batch_size, epochs, alpha, method=None, m_lambda=0, beta=0.9):
+    def fit(self, x_train, y_train, batch_size, epochs, alpha, method=None, m_lambda=0, beta=0.9, regularization=None, reg_lambda=0):
         """
         Parameters
         ----------
@@ -258,7 +258,8 @@ class Net:
 
     def __mini_batch(self, x_batch, y_batch, alpha, method=None, 
                      m_lambda=0, momentum_weights=None, momentum_biases=None, 
-                     beta=0.5, exp_g_weights=None, exp_g_biases=None):
+                     beta=0.5, exp_g_weights=None, exp_g_biases=None, 
+                     regularization=None, reg_lambda=0):
         n = len(x_batch)
         x_flat = False
         y_flat = False
@@ -269,11 +270,14 @@ class Net:
         delta_weights = self.__zero_weights()
         delta_biases = [np.zeros(layer.get_n_neurons()) for layer in self.layers]
         for x, y in zip(x_batch, y_batch):
-            dw, db = self.__back_propagate([x] if x_flat else x, [y] if y_flat else y, alpha)
+            dw, db = self.__back_propagate([x] if x_flat else x, [y] if y_flat else y, alpha, regularization=None, reg_lambda=0)
             for weights, w in zip(delta_weights, dw):
                 weights += w
             for weights, w in zip(delta_biases, db):
                 weights += w
+        if regularization == "l2":
+            pass
+        
         if method is None:
             return self.__basic_update(n, delta_weights, delta_biases)
         if method == 'momentum':
@@ -316,7 +320,7 @@ class Net:
             layer.bias += db / (np.sqrt(exp_g_b) + eps)
         return exp_g_weights, exp_g_biases
 
-    def __back_propagate(self, x, y, alpha):
+    def __back_propagate(self, x, y, alpha, regularization=None, reg_lambda=0):
         n = self.get_n_layers()
         delta_weights = [0 for i in range(n)]
         y_pred = self.predict(x, save_args=True)
@@ -340,6 +344,16 @@ class Net:
             prev_layer = self.layers[i-1]
             delta_weights[i] = np.matmul(np.transpose(np.array([errors[i]])), np.array([prev_layer.function(prev_layer.args)])) * (-1) * alpha
         delta_biases = [e  * (-1) * alpha for e in errors]
+        if regularization == "l1":
+            for dw, layer in zip(delta_weights, self.layers):
+                positive = dw > 0
+                negative = dw < 0
+                dw[positive] += (-1) * alpha * reg_lambda
+                dw[negative] += alpha * reg_lambda
+        if regularization == "l2":
+            for dw, layer in zip(delta_weights, self.layers):
+                dw += (-1) * alpha * 2 * reg_lambda * layer.get_weights()
+                # db += (-1) * alpha * 2 * reg_lambda * layer.get_bias()
         return delta_weights, delta_biases
 
     def get_n_layers(self):
