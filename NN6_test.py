@@ -65,4 +65,13 @@ for i in range(100):
     print("mse : ", mse)
     print()
     
+#%%
     
+f = ['tanh', 'tanh', 'linear']
+net = Net(n_neurons=[5, 5, 1], n_inputs=1, functions=f, param_init='xavier')
+
+net.fit_until_rise(2, x_train, y_train, x_test, y_test, None, 1, 100, 0.003,
+                   method='rmsprop', m_lambda=0.5, beta=0.9, 
+                   regularization='l1', reg_lambda=0.2,
+                   print_results=True)
+

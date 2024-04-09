@@ -2,6 +2,7 @@ import numpy as np
 import math
 from autograd import grad
 import sys
+from sklearn.metrics import f1_score
 
 def softmax(x):
     M = np.max(x)
@@ -39,6 +40,30 @@ def df_ReLU(x):
     if x > 0:
         return 1.0
     return 0.0
+
+def MSE(x, y):
+    return sum((x - y) ** 2) / len(x)
+
+def count_MSE(net, x_test, y_test, scaler_y=None):
+    predictions = []
+    for x in x_test:
+        predictions.append(net.predict(x))
+    predictions = np.array(predictions)
+    if scaler_y is not None:
+        predictions = scaler_y.inverse_transform(np.array([predictions]))[0]
+    return MSE(predictions, y_test)
+
+def predict_class(predictions):
+    classes = []
+    for p in predictions:
+        classes.append(np.where(np.max(p) == p))
+    return np.array(classes).reshape(-1)
+
+def predict(net, x_data):
+    predictions = []
+    for x in x_data:
+        predictions.append(net.predict(x))
+    return np.array(predictions)
 
 class Net:
     class Layer:
@@ -218,8 +243,53 @@ class Net:
         if len(args) == 1:
             args = args[0]
         return args
+    
+    def fit_until_rise(self, k, x_train, y_train, x_test, y_test, scaler_y,
+                       batch_size, epochs, alpha, method=None, m_lambda=0, beta=0.9, 
+                       regularization=None, reg_lambda=0,
+                       print_results=False):
+        rises = 0
+        i = 0
+        best_MSE_test = math.inf
+        best_F1_test = 0
+        while i < epochs and rises < k:
+            self.fit(x_train, y_train, batch_size, epochs=1, alpha=alpha, 
+                     method=method, m_lambda=m_lambda, beta=beta, 
+                     regularization=regularization, reg_lambda=reg_lambda)
+            i += 1
+            if self.classification:
+                preds = predict(self, x_test)
+                classes = predict_class(preds)
+                F1 = f1_score(y_test, classes, average='weighted')
+                if F1 > best_F1_test:
+                    best_F1_test = F1
+                    weights = self.get_all_weights()
+                    biases = self.get_all_biases()
+                    rises = 0
+                else:
+                    rises += 1
+                if print_results:
+                    print('Epoch: ', i + 1)
+                    print('Best F1: ', best_F1_test)
+                    print('F1: ', F1)
+            else:
+                MSE = count_MSE(self, x_test, y_test, scaler_y)
+                if MSE < best_MSE_test:
+                    best_MSE_test = MSE
+                    weights = self.get_all_weights()
+                    biases = self.get_all_biases()
+                    rises = 0
+                else:
+                    rises += 1
+                if print_results:
+                    print('Epoch: ', i + 1)
+                    print('Best MSE: ', best_MSE_test)
+                    print('MSE: ', MSE)
+        return weights, biases
 
-    def fit(self, x_train, y_train, batch_size, epochs, alpha, method=None, m_lambda=0, beta=0.9, regularization=None, reg_lambda=0):
+    def fit(self, x_train, y_train, batch_size, epochs, alpha, 
+            method=None, m_lambda=0, beta=0.9, 
+            regularization=None, reg_lambda=0):
         """
         Parameters
         ----------
