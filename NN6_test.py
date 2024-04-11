@@ -65,7 +65,7 @@ for i in range(100):
     print("mse : ", mse)
     print()
     
-#%%
+#%% early stop
     
 f = ['tanh', 'tanh', 'linear']
 net = Net(n_neurons=[5, 5, 1], n_inputs=1, functions=f, param_init='xavier')

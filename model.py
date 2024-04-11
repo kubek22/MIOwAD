@@ -252,15 +252,22 @@ class Net:
         i = 0
         best_MSE_test = math.inf
         best_F1_test = 0
+        results_train = []
+        results_test = []
         while i < epochs and rises < k:
             self.fit(x_train, y_train, batch_size, epochs=1, alpha=alpha, 
                      method=method, m_lambda=m_lambda, beta=beta, 
                      regularization=regularization, reg_lambda=reg_lambda)
             i += 1
             if self.classification:
+                preds = predict(self, x_train)
+                classes = predict_class(preds)
+                F1 = f1_score(y_train, classes, average='weighted')
+                results_train.append(F1)
                 preds = predict(self, x_test)
                 classes = predict_class(preds)
                 F1 = f1_score(y_test, classes, average='weighted')
+                results_test.append(F1)
                 if F1 > best_F1_test:
                     best_F1_test = F1
                     weights = self.get_all_weights()
@@ -273,7 +280,10 @@ class Net:
                     print('Best F1: ', best_F1_test)
                     print('F1: ', F1)
             else:
+                MSE = count_MSE(self, x_train, y_train, scaler_y)
+                results_train.append(MSE)
                 MSE = count_MSE(self, x_test, y_test, scaler_y)
+                results_test.append(MSE)
                 if MSE < best_MSE_test:
                     best_MSE_test = MSE
                     weights = self.get_all_weights()
@@ -285,7 +295,7 @@ class Net:
                     print('Epoch: ', i + 1)
                     print('Best MSE: ', best_MSE_test)
                     print('MSE: ', MSE)
-        return weights, biases
+        return weights, biases, results_train, results_test
 
     def fit(self, x_train, y_train, batch_size, epochs, alpha, 
             method=None, m_lambda=0, beta=0.9, 
