@@ -4,7 +4,6 @@ import numpy as np
 from pandas import read_csv
 import matplotlib.pyplot as plt
 from model import Net
-import math
 import pickle
 import time
 from sklearn.preprocessing import MinMaxScaler
@@ -50,7 +49,6 @@ y_test = df_test["y"]
 #%%
 
 plt.plot(x_train, y_train, 'o')
-plt.plot(x_test, y_test, 'o')
 plt.show()
 
 #%% scaling
@@ -62,9 +60,10 @@ x_test_scaled = scaler_x.transform(np.transpose([x_test]))
 #%% parameters
 
 k = 10
-max_epochs = 1000
+max_epochs = 20000
 max_rises = 100
-learning_rate = 0.001
+learning_rate = 0.003
+threshold = 500
 
 #%% without regularization
 
@@ -77,7 +76,7 @@ warnings.filterwarnings('ignore')
 start_time = time.time()
 
 for i in range(max_epochs):
-    net.fit(x_train_scaled, y_train, batch_size=1, epochs=1, alpha=learning_rate, method='rmsprop')
+    net.fit(x_train_scaled, y_train, batch_size=16, epochs=1, alpha=learning_rate, method='rmsprop')
     mse = count_MSE(net, x_train_scaled, y_train)
     train_mse.append(mse)
     mse = count_MSE(net, x_test_scaled, y_test)
@@ -96,10 +95,16 @@ save(test_mse, 'test_6_1_basic')
 
 #%%
 
+train_mse = read('train_6_1_basic')
+test_mse = read('test_6_1_basic')
+
 epochs = np.arange(1, max_epochs + 1)
-plt.plot(epochs, train_mse, 'o')
-plt.plot(epochs, test_mse, 'o')
+
+plt.plot(epochs, train_mse, 'o-', markersize=1)
+plt.plot(epochs, test_mse, 'o-', markersize=1)
 plt.legend(('train','test'), loc='upper right')
+plt.xlabel('epoch')
+plt.ylabel('MSE')
 plt.show()
 
 #%% early stop l1
@@ -107,10 +112,10 @@ plt.show()
 f = ['tanh', 'tanh', 'linear']
 net = Net(n_neurons=[k, k, 1], n_inputs=1, functions=f, param_init='xavier')
 
-best_weights, best_biases, train_mse, test_mse = net.fit_until_rise(max_rises, x_train, y_train, x_test, y_test, scaler_y=None,
-                   batch_size=1, epochs=max_epochs, alpha=learning_rate,
+best_weights, best_biases, train_mse, test_mse = net.fit_until_rise(max_rises, threshold, x_train, y_train, x_test, y_test, scaler_y=None,
+                   batch_size=16, epochs=max_epochs, alpha=learning_rate,
                    method='rmsprop', m_lambda=0.5, beta=0.9, 
-                   regularization='l1', reg_lambda=0.2,
+                   regularization='l1', reg_lambda=0.8,
                    print_results=False)
 
 #%% save results
@@ -120,10 +125,15 @@ save(test_mse, 'test_6_1_L1')
 
 #%%
 
+train_mse = read('train_6_1_L1')
+test_mse = read('test_6_1_L1')
+
 epochs = np.arange(1, len(train_mse) + 1)
-plt.plot(epochs, train_mse, linewidth=1)
-plt.plot(epochs, test_mse, linewidth=1)
+plt.plot(epochs, train_mse, 'o-', markersize=1)
+plt.plot(epochs, test_mse, 'o-', markersize=1)
 plt.legend(('train','test'), loc='upper right')
+plt.xlabel('epoch')
+plt.ylabel('MSE')
 plt.show()
 
 #%% total results
@@ -131,10 +141,13 @@ plt.show()
 test_mse1 = read('test_6_1_basic')
 test_mse2 = read('test_6_1_L1')
 
+epochs1 = np.arange(1, max_epochs + 1)
 n = len(test_mse2)
-epochs = np.arange(1, n + 1)
+epochs2 = np.arange(1, n + 1)
 
-plt.plot(epochs, test_mse1[:n])
-plt.plot(epochs, test_mse2)
-plt.legend(('no reg','reg'), loc='upper right')
+plt.plot(epochs1, test_mse1)
+plt.plot(epochs2, test_mse2)
+plt.legend(('basic','L1'), loc='upper right')
+plt.xlabel('epoch')
+plt.ylabel('test MSE')
 plt.show()

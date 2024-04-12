@@ -244,7 +244,7 @@ class Net:
             args = args[0]
         return args
     
-    def fit_until_rise(self, k, x_train, y_train, x_test, y_test, scaler_y,
+    def fit_until_rise(self, k, threshold, x_train, y_train, x_test, y_test, scaler_y,
                        batch_size, epochs, alpha, method=None, m_lambda=0, beta=0.9, 
                        regularization=None, reg_lambda=0,
                        print_results=False):
@@ -273,7 +273,9 @@ class Net:
                     weights = self.get_all_weights()
                     biases = self.get_all_biases()
                     rises = 0
-                else:
+                elif F1 > results_test[-1]:
+                    rises = 0
+                elif F1 > threshold:
                     rises += 1
                 if print_results:
                     print('Epoch: ', i + 1)
@@ -289,12 +291,15 @@ class Net:
                     weights = self.get_all_weights()
                     biases = self.get_all_biases()
                     rises = 0
-                else:
+                elif MSE < results_test[-1]:
+                    rises = 0
+                elif MSE < threshold:
                     rises += 1
                 if print_results:
                     print('Epoch: ', i + 1)
                     print('Best MSE: ', best_MSE_test)
                     print('MSE: ', MSE)
+        print('rises: ', rises)
         return weights, biases, results_train, results_test
 
     def fit(self, x_train, y_train, batch_size, epochs, alpha, 
