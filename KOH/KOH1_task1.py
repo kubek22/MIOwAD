@@ -68,6 +68,8 @@ weights = som.weights
 plt.scatter(weights[:, 0], weights[:, 1], color=cmap(labels))
 plt.show()
 
+som.get_silhouette_score(data)
+
 #%% assigning classes
 
 som.assign_classes(data, classes)
@@ -82,9 +84,10 @@ c = som.predict(data)
 plt.scatter(data[:, 0], data[:, 1], color=cmap(c))
 plt.show()
 
-#%% silhouette score
-
 som.get_silhouette_score(data)
+
+#%% max silhouette score
+
 silhouette_score(data, classes)
 
 #%% mexican hat
@@ -118,6 +121,8 @@ weights = som.weights
 plt.scatter(weights[:, 0], weights[:, 1], color=cmap(labels))
 plt.show()
 
+som.get_silhouette_score(data)
+
 #%% assigning classes
 
 som.assign_classes(data, classes)
@@ -126,13 +131,14 @@ weights = som.weights
 plt.scatter(weights[:, 0], weights[:, 1], color=cmap(labels))
 plt.show()
 
+som.get_silhouette_score(data)
+
 #%% labeling vectors
 
 c = som.predict(data)
 plt.scatter(data[:, 0], data[:, 1], color=cmap(c))
 plt.show()
 
-#%% silhouette score
+#%% max silhouette score
 
-som.get_silhouette_score(data)
 silhouette_score(data, classes)
