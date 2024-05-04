@@ -12,7 +12,6 @@ class SOM:
         self.weights = np.random.rand(self.n_neurons, n_inputs)
         self.mesh = RectangularMesh(n_rows, n_cols)
         self.neighborhood_function = self.gaussian_function
-        # self.labels = np.zeros((self.n_neurons)) - 1
         self.labels = np.arange(self.n_neurons)
         
     def get_distances(self, x, y):
@@ -65,8 +64,12 @@ class SOM:
         idx = np.sum(counts, axis=1) == 0
         idx = np.where(idx)[0]
         for i in idx:
-            winner_index = self.get_nearest_index(self.weights[i], ignore=idx)
-            winning_label = self.labels[winner_index]
+            # winner_index = self.get_nearest_index(self.weights[i], ignore=idx)
+            # winning_label = self.labels[winner_index]
+            
+            winner_index = np.argmin(self.get_distances(self.weights[i], data))
+            winning_label = classes[winner_index]
+
             self.labels[i] = winning_label
         return self.labels
     
@@ -118,5 +121,9 @@ class RectangularMesh(Mesh):
         return indices
 
 class HexagonalMesh(Mesh):
-    pass
-
+    def get_position_on_mesh(self, index):
+        i = index[0]
+        j = index[1]
+        x = j + (0.5 if i % 2 == 1 else 0)
+        y = i * math.sqrt(3) / 2
+        return np.array([x, y])
