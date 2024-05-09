@@ -3,40 +3,36 @@
 from pandas import read_csv
 import matplotlib.pyplot as plt
 import time
-from model import SOM
+from model import SOM, HexagonalMesh
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.manifold import TSNE
 from sklearn.metrics import silhouette_score
 
 #%%
 
-df = read_csv("data/cube.csv")
+df = read_csv("data/hexagon.csv")
 df.head()
 
 n_classes = len(df.c.value_counts())
 
-data = df[["x", "y", "z"]].to_numpy()
+data = df[["x", "y"]].to_numpy()
 classes = df.c.to_numpy()
 
 data = MinMaxScaler((0, 1)).fit_transform(data)
 
-tsne = TSNE(n_components=2, random_state=10, perplexity=5)
-data_embedded = tsne.fit_transform(data)
-data_embedded = MinMaxScaler((0, 1)).fit_transform(data_embedded)
-
 #%%
 
 cmap = plt.colormaps['tab20']
-plt.scatter(data_embedded[:, 0], data_embedded[:, 1], color=cmap(df["c"]))
+plt.scatter(data[:, 0], data[:, 1], color=cmap(df["c"]))
 plt.show()
 
-#%% 
+#%% gauss
 
-som = SOM(2, 4, 3) # (2, 4) and (4, 5)
+som = SOM(4, 5, 2) # (2, 3) and (4, 5)
+som.mesh = HexagonalMesh(4, 5)
 
 start_time = time.time()
 
-scores = som.fit(data, epochs=20, init_lr=0.003, scale=0.8)
+scores = som.fit(data, epochs=100, init_lr=0.003, scale=1)
 
 end_time = time.time()
 time1 = end_time - start_time
@@ -50,14 +46,13 @@ plt.show()
 #%% labeling vectors
 
 c = som.predict(data)
-plt.scatter(data_embedded[:, 0], data_embedded[:, 1], color=cmap(c))
+plt.scatter(data[:, 0], data[:, 1], color=cmap(c))
 plt.show()
 
-#%% neurons
+#%% basic neurons
 
 labels = som.labels
 weights = som.weights
-weights_embedded = tsne.fit_transform(weights)
 plt.scatter(weights[:, 0], weights[:, 1], color=cmap(labels))
 plt.show()
 
@@ -71,13 +66,13 @@ weights = som.weights
 plt.scatter(weights[:, 0], weights[:, 1], color=cmap(labels))
 plt.show()
 
-som.get_silhouette_score(data)
-
 #%% labeling vectors
 
 c = som.predict(data)
-plt.scatter(data_embedded[:, 0], data_embedded[:, 1], color=cmap(c))
+plt.scatter(data[:, 0], data[:, 1], color=cmap(c))
 plt.show()
+
+som.get_silhouette_score(data)
 
 #%% max silhouette score
 
@@ -85,12 +80,13 @@ silhouette_score(data, classes)
 
 #%% mexican hat
 
-som = SOM(2, 4, 3)
+som = SOM(2, 3, 2)
 som.neighborhood_function = som.mexican_hat # requires smaller lr
+som.mesh = HexagonalMesh(2, 3)
 
 start_time = time.time()
 
-scores = som.fit(data, epochs=100, init_lr=0.0003, scale=0.9) # 0.8, 0.9, 1
+scores = som.fit(data, epochs=100, init_lr=0.0003, scale=0.5) # 0.1, 0.8, but not only
 
 end_time = time.time()
 time1 = end_time - start_time
@@ -104,14 +100,13 @@ plt.show()
 #%% labeling vectors
 
 c = som.predict(data)
-plt.scatter(data_embedded[:, 0], data_embedded[:, 1], color=cmap(c))
+plt.scatter(data[:, 0], data[:, 1], color=cmap(c))
 plt.show()
 
-#%% neurons
+#%% basic neurons
 
 labels = som.labels
 weights = som.weights
-weights_embedded = tsne.fit_transform(weights)
 plt.scatter(weights[:, 0], weights[:, 1], color=cmap(labels))
 plt.show()
 
@@ -130,6 +125,9 @@ som.get_silhouette_score(data)
 #%% labeling vectors
 
 c = som.predict(data)
-plt.scatter(data_embedded[:, 0], data_embedded[:, 1], color=cmap(c))
+plt.scatter(data[:, 0], data[:, 1], color=cmap(c))
 plt.show()
 
+#%% max silhouette score
+
+silhouette_score(data, classes)

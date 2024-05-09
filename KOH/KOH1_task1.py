@@ -2,23 +2,10 @@
 
 from pandas import read_csv
 import matplotlib.pyplot as plt
-import pickle
 import time
 from model import SOM
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import silhouette_score
-
-#%%
-
-def save(array, file_name):
-    file= open(file_name, 'wb')
-    pickle.dump(array, file)
-    file.close()
-
-def read(filename):
-    with open(filename, 'rb') as file:
-        array = pickle.load(file)
-    return array
 
 #%%
 
@@ -40,7 +27,7 @@ plt.show()
 
 #%% gauss
 
-som = SOM(4, 5, 2) # (2, 3) and (4, 5)
+som = SOM(2, 3, 2) # (2, 3) and (4, 5)
 
 start_time = time.time()
 

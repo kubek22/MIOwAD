@@ -73,6 +73,9 @@ class SOM:
             self.labels[i] = winning_label
         return self.labels
     
+    def reset_classes(self):
+        self.labels = np.arange(self.n_neurons)
+    
     def predict(self, data):
         preds = []
         for x in data:
@@ -83,6 +86,8 @@ class SOM:
     def get_silhouette_score(self, data, preds=None):
         if preds is None:
             preds = self.predict(data)
+        if len(np.unique(preds)) == 1:
+            return 0
         return silhouette_score(data, preds)
             
         
