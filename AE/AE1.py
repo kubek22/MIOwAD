@@ -1,5 +1,9 @@
 import numpy as np
 
+def rastrigin(X):
+    A = 10
+    return A * len(X) + sum([(x ** 2 - A * np.cos(2 * np.pi * x)) for x in X])
+
 def initialize_population(size: int, dims: int):
     population = np.random.randn(size, dims)
     return population
@@ -55,7 +59,8 @@ def main():
     DIMS = 3
     NOISE_MEAN = 0
     NOISE_STD_DEV = 1
-    FUNCTION = lambda a: a[0] ** 2 + a[1] ** 2 + 2 * a[2] ** 2
+    # FUNCTION = lambda a: a[0] ** 2 + a[1] ** 2 + 2 * a[2] ** 2
+    FUNCTION = rastrigin
     BEST_FRACTION = 0.3
     EPOCHS = 100
     population = None
