@@ -222,10 +222,57 @@ def initialize_population(size: int, available_rectangles: pd.DataFrame, r: floa
         population.append(individual)
     return population
 
-def crossbreeding():
-    pass
+def shift_rectangles(rectangles: np.array, r: float) -> np.array:
+    # shift up
+    indices = np.argsort(rectangles[:, 1])[::-1]
+    rectangles = rectangles[indices]
+    for i in range(len(rectangles)):
+        rectangle = rectangles[i, :]
+        x = rectangle[0]
+        y = rectangle[1]
+        width = rectangle[2]
+        height = rectangle[3]
+        
+        rect_x_mid = x + 0.5 * width
+        y_max = math.sqrt(r ** 2 - x ** 2)
+        if rect_x_mid > 0:
+            y_max = math.sqrt(r ** 2 - (x + width) ** 2)
+        
+        rectangles_above = get_rectangles_from_area(rectangles, x, x + width, y, math.inf)
+        if len(rectangles_above) > 0:
+            rectangles_above_y = rectangles_above[:, 1] - rectangles_above[:, 3]
+            y_max = np.min(rectangles_above_y)
+        
+        rectangles[i, 1] = y_max
+    
+    # shift left
+    indices = np.argsort(rectangles[:, 0])[::-1]
+    rectangles = rectangles[indices]
+    for i in range(len(rectangles)):
+        rectangle = rectangles[i, :]
+        x = rectangle[0]
+        y = rectangle[1]
+        width = rectangle[2]
+        height = rectangle[3]
+        
+        rect_y_mid = y - 0.5 * height
+        x_min = -math.sqrt(r ** 2 - y ** 2)
+        if rect_y_mid < 0:
+            x_min = -math.sqrt(r ** 2 - (y - height) ** 2)
+        
+        rectangles_left = get_rectangles_from_area(rectangles, -math.inf, x, y - height, y)
+        if len(rectangles_left) > 0:
+            rectangles_left_x = rectangles_left[:, 0] + rectangles_left[:, 2]
+            x_min = np.max(rectangles_left_x)
+        
+        rectangles[i, 0] = x_min
+        
+    return rectangles
 
 def mutation():
+    pass
+
+def crossbreeding():
     pass
 
 def evaluation():
@@ -241,13 +288,15 @@ def epoch():
 
 radius, rectangles = read_rectangles("data/cutting", "r800.csv")
 
-# population = np.random.rand(10, 4)
-# plot_individual(1, population)
+# individual = np.random.rand(10, 4)
+# plot_individual(1, individual)
 
 # radius = 200
-# population = randomly_insert_rectangle(rectangles.loc[1,:], np.array([]), radius, y_up=60, y_down=-180, x_left=-150, x_right=170)
-# plot_individual(radius, population)
+# individual = randomly_insert_rectangle(rectangles.loc[1,:], np.array([]), radius, y_up=60, y_down=-180, x_left=-150, x_right=170)
+# plot_individual(radius, individual)
 
 population = initialize_population(3, rectangles, radius)
 for individual in population:
     plot_individual(radius, individual)
+    
+
