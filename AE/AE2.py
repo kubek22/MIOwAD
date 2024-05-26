@@ -11,17 +11,11 @@ import re
 import random
 from typing import Dict, List, Tuple
 import math
-
-LEFT = -1
-RIGHT = 1
-UP = 1
-DOWN = -1
+import copy
 
 #%%
 
 def read_rectangles(path: str, file_name: str) -> Tuple[int, pd.DataFrame]:
-    path = "data/cutting"
-    file_name = "r800.csv"
     radius = int(re.search(r'\d+', file_name)[0])
     file_path = os.path.join(path, file_name)
     rectangles = read_csv(file_path, header=None)
@@ -47,15 +41,14 @@ def plot_rectangle(ax, height: float, width: float, x: float = 0, y: float = 0):
     rect = plt.Rectangle((x, y_lower_left), width, height, fill=False, edgecolor='r')
     ax.add_patch(rect)
 
-def plot_population(radius: int, population: np.array):
+def plot_individual(radius: int, individual: np.array):
     fig, ax = plot_circle(radius)
-    for element in population:
-        x = element[0]
-        y = element[1]
-        width = element[2]
-        height = element[3]
+    for rectangle in individual:
+        x = rectangle[0]
+        y = rectangle[1]
+        width = rectangle[2]
+        height = rectangle[3]
         plot_rectangle(ax, height, width, x, y)
-    # plt.show()
     
 def intersect_intervals(x1: float, x2: float, y1: float, y2: float) -> Tuple[float, float]:
     lb = max(x1, y1)
@@ -146,7 +139,7 @@ def adapt_x_interval_to_y_constraints(x_lb: float, x_rb: float, y_down: float, y
     
     return solution_interval
 
-def insert_rectangle(rectangle, population: np.array, r: float, 
+def insert_rectangle(rectangle: pd.Series, r: float, 
                      x_left: float = -math.inf, x_right: float = math.inf, 
                      y_down: float = -math.inf, y_up: float = math.inf) -> np.array:
     width = rectangle[0]
@@ -157,7 +150,7 @@ def insert_rectangle(rectangle, population: np.array, r: float,
     x_lb = max(x_lb, x_left)
     x_rb = min(x_rb, x_right - width)
     if x_lb > x_rb:
-        return population
+        return None
     
     x_lb, x_rb = adapt_x_interval_to_y_constraints(x_lb, x_rb, y_down, y_up, r, width, height)
     
@@ -171,15 +164,63 @@ def insert_rectangle(rectangle, population: np.array, r: float,
     y_ub = min(y_ub, y_up)
     y_lb = max(y_lb, y_down + height)
     if y_lb > y_ub:
-        return population
+        return None
     y = random.uniform(y_lb, y_ub)
-    element = [x, y, width, height, value]
-    if len(population) == 0:
-        return np.array([element])
-    return np.append(population, element)
+    rect = [x, y, width, height, value]
+    return rect
 
-def initialize_population(size: int) -> np.array:
-    pass
+def get_rectangles_from_area(rectangles: np.array,
+                     x_left: float, x_right: float, 
+                     y_down: float, y_up: float) -> np.array:
+    i = rectangles[:, 0] + rectangles[:, 2] > x_left
+    rectangles = rectangles[i, :]
+    i = rectangles[:, 0] < x_right
+    rectangles = rectangles[i, :]
+    i = rectangles[:, 1] - rectangles[:, 3] > y_down
+    rectangles = rectangles[i, :]
+    i = rectangles[:, 1] < y_up
+    rectangles = rectangles[i, :]
+    return rectangles
+
+def randomly_insert_rectangle(rectangle: pd.Series, rectangles: np.array, r: float, 
+                     x_left: float = -math.inf, x_right: float = math.inf, 
+                     y_down: float = -math.inf, y_up: float = math.inf):
+    LEFT = 0
+    RIGHT = 1
+    UP = 2
+    DOWN = 3
+    rectangles_copy = copy.copy(rectangles)
+    while len(rectangles_copy) != 0:
+        rect = rectangles_copy[0, :]
+        x = rect[0]
+        y = rect[1]
+        width = rect[2]
+        height = rect[3]
+        direction = np.random.randint(4)
+        if direction == LEFT:
+            x_right = x
+        elif direction == RIGHT:
+            x_left = x + width
+        elif direction == DOWN:
+            y_up = y - height
+        elif direction == UP:
+            y_down = y
+        rectangles_copy = get_rectangles_from_area(rectangles_copy, x_left, x_right, y_down, y_up)
+    new_rectangle = insert_rectangle(rectangle, r, x_left, x_right, y_down, y_up)
+    if new_rectangle is None:
+        return rectangles
+    if len(rectangles) == 0:
+        return np.array([new_rectangle])
+    return np.append(rectangles, new_rectangle)
+
+def initialize_population(size: int, available_rectangles: pd.DataFrame, r: float) -> List[np.array]:
+    population = []
+    n = len(rectangles)
+    for i in range(size):
+        rectangle = rectangles.iloc[np.random.randint(n), :]
+        individual = randomly_insert_rectangle(rectangle, np.array([]), r)
+        population.append(individual)
+    return population
 
 def crossbreeding():
     pass
@@ -201,8 +242,12 @@ def epoch():
 radius, rectangles = read_rectangles("data/cutting", "r800.csv")
 
 # population = np.random.rand(10, 4)
-# plot_population(1, population)
+# plot_individual(1, population)
 
-radius = 200
-population = insert_rectangle(rectangles.loc[1,:], np.array([]), radius, y_up=60, y_down=-180, x_left=-150, x_right=170)
-plot_population(radius, population)
+# radius = 200
+# population = randomly_insert_rectangle(rectangles.loc[1,:], np.array([]), radius, y_up=60, y_down=-180, x_left=-150, x_right=170)
+# plot_individual(radius, population)
+
+population = initialize_population(3, rectangles, radius)
+for individual in population:
+    plot_individual(radius, individual)
