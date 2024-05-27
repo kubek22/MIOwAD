@@ -170,15 +170,15 @@ def insert_rectangle(rectangle: pd.Series, r: float,
     return rect
 
 def get_rectangles_from_area(rectangles: np.array,
-                     x_left: float, x_right: float, 
-                     y_down: float, y_up: float) -> np.array:
+                     x_left: float = -math.inf, x_right: float = math.inf, 
+                     y_down: float = -math.inf, y_up: float = math.inf) -> np.array:
     i = rectangles[:, 0] + rectangles[:, 2] > x_left
     rectangles = rectangles[i, :]
     i = rectangles[:, 0] < x_right
     rectangles = rectangles[i, :]
-    i = rectangles[:, 1] - rectangles[:, 3] > y_down
+    i = rectangles[:, 1] > y_down
     rectangles = rectangles[i, :]
-    i = rectangles[:, 1] < y_up
+    i = rectangles[:, 1] - rectangles[:, 3] < y_up
     rectangles = rectangles[i, :]
     return rectangles
 
@@ -215,9 +215,9 @@ def randomly_insert_rectangle(rectangle: pd.Series, rectangles: np.array, r: flo
 
 def initialize_population(size: int, available_rectangles: pd.DataFrame, r: float) -> List[np.array]:
     population = []
-    n = len(rectangles)
+    n = len(available_rectangles)
     for i in range(size):
-        rectangle = rectangles.iloc[np.random.randint(n), :]
+        rectangle = available_rectangles.iloc[np.random.randint(n), :]
         individual = randomly_insert_rectangle(rectangle, np.array([]), r)
         population.append(individual)
     return population
@@ -269,17 +269,89 @@ def shift_rectangles(rectangles: np.array, r: float) -> np.array:
         
     return rectangles
 
-def mutation():
-    pass
+def mutation(population: List[np.array], available_rectangles: pd.DataFrame, r: float) -> List[np.array]:
+    n = len(available_rectangles)
+    for i in range(len(population)):
+        individual = population[i]
+        shift_rectangles(individual, r)
+        
+        rectangle = available_rectangles.iloc[np.random.randint(n), :]
+        individual = randomly_insert_rectangle(rectangle, individual, r)
+        population[i] = individual
+    return population
 
-def crossbreeding():
-    pass
+def get_full_rectangles_from_area(rectangles: np.array,
+                     x_left: float = -math.inf, x_right: float = math.inf, 
+                     y_down: float = -math.inf, y_up: float = math.inf) -> np.array:
+    i = rectangles[:, 0] >= x_left
+    rectangles = rectangles[i, :]
+    i = rectangles[:, 0] + rectangles[:, 2] <= x_right
+    rectangles = rectangles[i, :]
+    i = rectangles[:, 1] - rectangles[:, 3] >= y_down
+    rectangles = rectangles[i, :]
+    i = rectangles[:, 1] <= y_up
+    rectangles = rectangles[i, :]
+    return rectangles
 
-def evaluation():
-    pass
+def merge_individuals(individual_part1: np.array, individual_part2: np.array) -> np.array:
+    if len(individual_part1) == 0:
+        new_individual = individual_part2
+    elif len(individual_part2) == 0:
+        new_individual = individual_part1
+    else:
+        new_individual = np.append(individual_part1, individual_part2, axis=0)
+    return new_individual
 
-def selection():
-    pass
+def crossbreeding(population: List[np.array], r: float, proba: float = 1) -> List[np.array]:
+    n = len(population)
+    for i in range(n - 1, -1, -1):
+        if np.random.uniform() > proba:
+            continue
+        j = np.random.choice(n)
+        use_horizontal_line = bool(np.random.randint(2))
+        if use_horizontal_line:
+            y = np.random.uniform(-r, r)
+            individual_i_down = get_full_rectangles_from_area(population[i], y_up=y)
+            individual_i_up = get_full_rectangles_from_area(population[i], y_down=y)
+            individual_j_down = get_full_rectangles_from_area(population[j], y_up=y)
+            individual_j_up = get_full_rectangles_from_area(population[j], y_down=y)
+            
+            new_individual_i = merge_individuals(individual_i_down, individual_j_up)
+            new_individual_j = merge_individuals(individual_j_down, individual_i_up)
+        else:
+            x = np.random.uniform(-r, r)
+            individual_i_left = get_full_rectangles_from_area(population[i], x_right=x)
+            individual_i_right = get_full_rectangles_from_area(population[i], x_left=x)
+            individual_j_left = get_full_rectangles_from_area(population[j], x_right=x)
+            individual_j_right = get_full_rectangles_from_area(population[j], x_left=x)
+            
+            new_individual_i = merge_individuals(individual_i_left, individual_j_right)
+            new_individual_j = merge_individuals(individual_j_left, individual_i_right)
+        
+        population[i] = new_individual_i
+        population[j] = new_individual_j
+    return population
+
+def evaluation(population: List[np.array]):
+    results = []
+    for individual in population:
+        results.append(np.sum(individual[:, 4]))
+    return results
+
+def selection(population: List[np.array], eval_results: List[float], size: int, best_fraction: float):
+    best_number = min(int(size * best_fraction), size)
+    random_number = size - best_number
+    order = np.argsort(eval_results)[::-1]
+    
+    population = [population[i] for i in order]
+    new_population = [population[order[i]] for i in range(best_number)]
+    
+    random_indices = np.random.choice(size, random_number, p=eval_results)
+    
+    for i in random_indices:
+        new_population.append(population[i])
+    
+    return new_population
 
 def epoch():
     pass
