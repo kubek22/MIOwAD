@@ -153,8 +153,10 @@ def insert_rectangle(rectangle: pd.Series, r: float,
         return None
     
     x_lb, x_rb = adapt_x_interval_to_y_constraints(x_lb, x_rb, y_down, y_up, r, width, height)
+    if x_lb > x_rb:
+        return None
     
-    x = random.uniform(x_lb, x_rb)
+    x = np.random.uniform(x_lb, x_rb)
     rect_x_mid = x + 0.5 * width
     
     y_ub = math.sqrt(r ** 2 - x ** 2)
@@ -165,7 +167,7 @@ def insert_rectangle(rectangle: pd.Series, r: float,
     y_lb = max(y_lb, y_down + height)
     if y_lb > y_ub:
         return None
-    y = random.uniform(y_lb, y_ub)
+    y = np.random.uniform(y_lb, y_ub)
     rect = [x, y, width, height, value]
     return rect
 
@@ -196,22 +198,42 @@ def randomly_insert_rectangle(rectangle: pd.Series, rectangles: np.array, r: flo
         y = rect[1]
         width = rect[2]
         height = rect[3]
-        direction = np.random.randint(4)
-        if direction == LEFT:
-            x_right = x
-        elif direction == RIGHT:
-            x_left = x + width
-        elif direction == DOWN:
-            y_up = y - height
-        elif direction == UP:
-            y_down = y
+        
+        x_left_copy = x_left
+        x_right_copy = x_right
+        y_down_copy = y_down
+        y_up_copy = y_up
+        
+        available_directions = [LEFT, RIGHT, UP, DOWN]
+        probabilities = [0.05, 0.45, 0.05, 0.45]
+        test_rectangle = None  # checks if chosen space is big enough to fit the rectangle
+        while len(available_directions) > 0 and test_rectangle is None:
+            x_left = x_left_copy
+            x_right = x_right_copy
+            y_down = y_down_copy
+            y_up = y_up_copy
+            
+            direction = random.choices(available_directions, weights=probabilities)[0]
+            d_index = np.where(np.array(available_directions) == direction)[0][0]
+            available_directions.pop(d_index)
+            probabilities.pop(d_index)
+            if direction == LEFT:
+                x_right = x
+            elif direction == RIGHT:
+                x_left = x + width
+            elif direction == DOWN:
+                y_up = y - height
+            elif direction == UP:
+                y_down = y
+            test_rectangle = insert_rectangle(rectangle, r, x_left, x_right, y_down, y_up)
         rectangles_copy = get_rectangles_from_area(rectangles_copy, x_left, x_right, y_down, y_up)
+        
     new_rectangle = insert_rectangle(rectangle, r, x_left, x_right, y_down, y_up)
     if new_rectangle is None:
         return rectangles
     if len(rectangles) == 0:
         return np.array([new_rectangle])
-    return np.append(rectangles, new_rectangle)
+    return np.append(rectangles, np.array([new_rectangle]), axis=0)
 
 def initialize_population(size: int, available_rectangles: pd.DataFrame, r: float) -> List[np.array]:
     population = []
@@ -241,7 +263,7 @@ def shift_rectangles(rectangles: np.array, r: float) -> np.array:
         rectangles_above = get_rectangles_from_area(rectangles, x, x + width, y, math.inf)
         if len(rectangles_above) > 0:
             rectangles_above_y = rectangles_above[:, 1] - rectangles_above[:, 3]
-            y_max = np.min(rectangles_above_y)
+            y_max = min(np.min(rectangles_above_y), y_max)
         
         rectangles[i, 1] = y_max
     
@@ -263,7 +285,7 @@ def shift_rectangles(rectangles: np.array, r: float) -> np.array:
         rectangles_left = get_rectangles_from_area(rectangles, -math.inf, x, y - height, y)
         if len(rectangles_left) > 0:
             rectangles_left_x = rectangles_left[:, 0] + rectangles_left[:, 2]
-            x_min = np.max(rectangles_left_x)
+            x_min = max(np.max(rectangles_left_x), x_min)
         
         rectangles[i, 0] = x_min
         
@@ -273,7 +295,7 @@ def mutation(population: List[np.array], available_rectangles: pd.DataFrame, r: 
     n = len(available_rectangles)
     for i in range(len(population)):
         individual = population[i]
-        shift_rectangles(individual, r)
+        individual = shift_rectangles(individual, r)
         
         rectangle = available_rectangles.iloc[np.random.randint(n), :]
         individual = randomly_insert_rectangle(rectangle, individual, r)
@@ -303,6 +325,7 @@ def merge_individuals(individual_part1: np.array, individual_part2: np.array) ->
     return new_individual
 
 def crossbreeding(population: List[np.array], r: float, proba: float = 1) -> List[np.array]:
+    # TODO check
     n = len(population)
     for i in range(n - 1, -1, -1):
         if np.random.uniform() > proba:
@@ -346,6 +369,7 @@ def selection(population: List[np.array], eval_results: List[float], size: int, 
     population = [population[i] for i in order]
     new_population = [population[order[i]] for i in range(best_number)]
     
+    eval_results = np.array(eval_results) / np.sum(eval_results)
     random_indices = np.random.choice(size, random_number, p=eval_results)
     
     for i in random_indices:
@@ -354,7 +378,25 @@ def selection(population: List[np.array], eval_results: List[float], size: int, 
     return new_population
 
 def epoch():
-    pass
+    radius, available_rectangles = read_rectangles("data/cutting", "r800.csv")
+    size = 3
+    population = initialize_population(size, available_rectangles, radius)
+    for individual in population:
+        plot_individual(radius, individual)
+    
+    population = mutation(population, available_rectangles, radius)
+    for individual in population:
+        plot_individual(radius, individual)
+        
+    population = crossbreeding(population, radius)
+    for individual in population:
+        plot_individual(radius, individual)
+    
+    eval_results = evaluation(population)
+    population = selection(population, eval_results, size, 0)
+    for individual in population:
+        plot_individual(radius, individual)
+    
 
 #%%
 
