@@ -33,12 +33,12 @@ def plot_circle(r: float, a: float = 0, b: float = 0):
     ax.set_xlim(a - r - margin, a + r + margin)
     ax.set_ylim(b - r - margin, b + r + margin)
     ax.set_aspect('equal', adjustable='box')
-    ax.grid(True)
+    ax.grid(False)
     return fig, ax
 
 def plot_rectangle(ax, height: float, width: float, x: float = 0, y: float = 0):
     y_lower_left = y - height
-    rect = plt.Rectangle((x, y_lower_left), width, height, fill=False, edgecolor='r')
+    rect = plt.Rectangle((x, y_lower_left), width, height, fill=True, edgecolor='r', facecolor='mistyrose')
     ax.add_patch(rect)
 
 def plot_individual(radius: int, individual: np.array):
@@ -244,8 +244,7 @@ def initialize_population(size: int, available_rectangles: pd.DataFrame, r: floa
         population.append(individual)
     return population
 
-def shift_rectangles(rectangles: np.array, r: float) -> np.array:
-    # shift up
+def shift_rectangles_up(rectangles: np.array, r: float) -> np.array:
     indices = np.argsort(rectangles[:, 1])[::-1]
     rectangles = rectangles[indices]
     for i in range(len(rectangles)):
@@ -258,17 +257,19 @@ def shift_rectangles(rectangles: np.array, r: float) -> np.array:
         rect_x_mid = x + 0.5 * width
         y_max = math.sqrt(r ** 2 - x ** 2)
         if rect_x_mid > 0:
+            # TODO
             y_max = math.sqrt(r ** 2 - (x + width) ** 2)
         
-        rectangles_above = get_rectangles_from_area(rectangles, x, x + width, y, math.inf)
+        rectangles_above = get_rectangles_from_area(rectangles[:i], x, x + width, y, math.inf)
         if len(rectangles_above) > 0:
             rectangles_above_y = rectangles_above[:, 1] - rectangles_above[:, 3]
             y_max = min(np.min(rectangles_above_y), y_max)
-        
+            
         rectangles[i, 1] = y_max
-    
-    # shift left
-    indices = np.argsort(rectangles[:, 0])[::-1]
+    return rectangles
+
+def shift_rectangles_left(rectangles: np.array, r: float) -> np.array:
+    indices = np.argsort(rectangles[:, 0])
     rectangles = rectangles[indices]
     for i in range(len(rectangles)):
         rectangle = rectangles[i, :]
@@ -282,7 +283,7 @@ def shift_rectangles(rectangles: np.array, r: float) -> np.array:
         if rect_y_mid < 0:
             x_min = -math.sqrt(r ** 2 - (y - height) ** 2)
         
-        rectangles_left = get_rectangles_from_area(rectangles, -math.inf, x, y - height, y)
+        rectangles_left = get_rectangles_from_area(rectangles[:i], -math.inf, x, y - height, y)
         if len(rectangles_left) > 0:
             rectangles_left_x = rectangles_left[:, 0] + rectangles_left[:, 2]
             x_min = max(np.max(rectangles_left_x), x_min)
@@ -295,10 +296,12 @@ def mutation(population: List[np.array], available_rectangles: pd.DataFrame, r: 
     n = len(available_rectangles)
     for i in range(len(population)):
         individual = population[i]
-        individual = shift_rectangles(individual, r)
+        individual = shift_rectangles_up(individual, r)
+        individual = shift_rectangles_left(individual, r)
         
         rectangle = available_rectangles.iloc[np.random.randint(n), :]
         individual = randomly_insert_rectangle(rectangle, individual, r)
+        
         population[i] = individual
     return population
 
@@ -325,7 +328,6 @@ def merge_individuals(individual_part1: np.array, individual_part2: np.array) ->
     return new_individual
 
 def crossbreeding(population: List[np.array], r: float, proba: float = 1) -> List[np.array]:
-    # TODO check
     n = len(population)
     for i in range(n - 1, -1, -1):
         if np.random.uniform() > proba:
@@ -351,8 +353,10 @@ def crossbreeding(population: List[np.array], r: float, proba: float = 1) -> Lis
             new_individual_i = merge_individuals(individual_i_left, individual_j_right)
             new_individual_j = merge_individuals(individual_j_left, individual_i_right)
         
-        population[i] = new_individual_i
-        population[j] = new_individual_j
+        if len(new_individual_i) > 0:
+            population.append(new_individual_i)
+        if len(new_individual_j) > 0:
+            population.append(new_individual_j)
     return population
 
 def evaluation(population: List[np.array]):
@@ -370,33 +374,55 @@ def selection(population: List[np.array], eval_results: List[float], size: int, 
     new_population = [population[order[i]] for i in range(best_number)]
     
     eval_results = np.array(eval_results) / np.sum(eval_results)
-    random_indices = np.random.choice(size, random_number, p=eval_results)
+    random_indices = np.random.choice(len(population), random_number, p=eval_results)
     
     for i in random_indices:
         new_population.append(population[i])
     
     return new_population
 
-def epoch():
-    radius, available_rectangles = read_rectangles("data/cutting", "r800.csv")
-    size = 3
-    population = initialize_population(size, available_rectangles, radius)
-    for individual in population:
-        plot_individual(radius, individual)
-    
+def epoch(size: int, radius: float, available_rectangles: pd.DataFrame, best_result: float, best_individual: np.array, best_proba: float, population: List[np.array]):
     population = mutation(population, available_rectangles, radius)
-    for individual in population:
-        plot_individual(radius, individual)
-        
     population = crossbreeding(population, radius)
-    for individual in population:
-        plot_individual(radius, individual)
-    
     eval_results = evaluation(population)
-    population = selection(population, eval_results, size, 0)
+    best_index = np.argmax(eval_results)
+    if eval_results[best_index] > best_result:
+        best_result = eval_results[best_index]
+        best_individual = population[best_index]
+    population = selection(population, eval_results, size, best_proba)
+    return population, best_result, best_individual
+
+def test_population(population, r):
     for individual in population:
-        plot_individual(radius, individual)
+        for rectangle in individual:
+            x = rectangle[0]
+            y = rectangle[1]
+            width = rectangle[2]
+            height = rectangle[3]
+            
+            eps = 1e-6
+            if x ** 2 + y ** 2 > r ** 2 + eps or (x+width) ** 2 + y ** 2 > r ** 2 + eps or x ** 2 + (y-height) ** 2 > r ** 2 + eps or (x+width) ** 2 + (y-height) ** 2 > r ** 2 + eps:
+                plot_individual(r, individual)
+                return False
+    return True
     
+def run():
+    radius, available_rectangles = read_rectangles("data/cutting", "r800.csv")
+    size = 1000
+    best_proba = 0.1
+    best_result = 0
+    best_individual = None
+    epochs = 100
+    population = initialize_population(size, available_rectangles, radius)
+    for e in range(epochs):
+        population, best_result, best_individual = epoch(size, radius, available_rectangles, best_result, best_individual, best_proba, population)
+    plot_individual(radius, best_individual)
+    print(f'Best result: {best_result} ')
+    print(f'Number of rectangles : {len(best_individual)} ')
+    
+#%%
+
+run()
 
 #%%
 
