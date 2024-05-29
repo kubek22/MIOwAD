@@ -252,12 +252,10 @@ def shift_rectangles_up(rectangles: np.array, r: float) -> np.array:
         x = rectangle[0]
         y = rectangle[1]
         width = rectangle[2]
-        height = rectangle[3]
         
         rect_x_mid = x + 0.5 * width
         y_max = math.sqrt(r ** 2 - x ** 2)
         if rect_x_mid > 0:
-            # TODO
             y_max = math.sqrt(r ** 2 - (x + width) ** 2)
         
         rectangles_above = get_rectangles_from_area(rectangles[:i], x, x + width, y, math.inf)
@@ -275,7 +273,6 @@ def shift_rectangles_left(rectangles: np.array, r: float) -> np.array:
         rectangle = rectangles[i, :]
         x = rectangle[0]
         y = rectangle[1]
-        width = rectangle[2]
         height = rectangle[3]
         
         rect_y_mid = y - 0.5 * height
@@ -294,12 +291,16 @@ def shift_rectangles_left(rectangles: np.array, r: float) -> np.array:
 
 def mutation(population: List[np.array], available_rectangles: pd.DataFrame, r: float) -> List[np.array]:
     n = len(available_rectangles)
+    importance = available_rectangles['value'] / (available_rectangles['width'] * available_rectangles['height'])
+    probabilities = importance / np.sum(importance)
     for i in range(len(population)):
         individual = population[i]
         individual = shift_rectangles_up(individual, r)
         individual = shift_rectangles_left(individual, r)
         
-        rectangle = available_rectangles.iloc[np.random.randint(n), :]
+        selected_index = np.random.choice(n, p=probabilities)
+        rectangle = available_rectangles.iloc[selected_index, :]
+        # rectangle = available_rectangles.iloc[np.random.randint(n), :]
         individual = randomly_insert_rectangle(rectangle, individual, r)
         
         population[i] = individual
@@ -408,11 +409,11 @@ def test_population(population, r):
     
 def run():
     radius, available_rectangles = read_rectangles("data/cutting", "r800.csv")
-    size = 1000
+    size = 300
     best_proba = 0.1
     best_result = 0
     best_individual = None
-    epochs = 100
+    epochs = 500
     population = initialize_population(size, available_rectangles, radius)
     for e in range(epochs):
         population, best_result, best_individual = epoch(size, radius, available_rectangles, best_result, best_individual, best_proba, population)
