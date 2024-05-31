@@ -4,14 +4,14 @@ import pandas as pd
 from pandas import read_csv
 import numpy as np
 import matplotlib.pyplot as plt
-import time
-import matplotlib.colors as mcolors
 import os
 import re
 import random
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 import math
 import copy
+
+PATH = "data/cutting"
 
 #%%
 
@@ -49,6 +49,8 @@ def plot_individual(radius: int, individual: np.array):
         width = rectangle[2]
         height = rectangle[3]
         plot_rectangle(ax, height, width, x, y)
+    plt.show()
+    plt.close(fig)
     
 def intersect_intervals(x1: float, x2: float, y1: float, y2: float) -> Tuple[float, float]:
     lb = max(x1, y1)
@@ -382,17 +384,6 @@ def selection(population: List[np.array], eval_results: List[float], size: int, 
     
     return new_population
 
-def epoch(size: int, radius: float, available_rectangles: pd.DataFrame, best_result: float, best_individual: np.array, best_proba: float, population: List[np.array]):
-    population = mutation(population, available_rectangles, radius)
-    population = crossbreeding(population, radius)
-    eval_results = evaluation(population)
-    best_index = np.argmax(eval_results)
-    if eval_results[best_index] > best_result:
-        best_result = eval_results[best_index]
-        best_individual = population[best_index]
-    population = selection(population, eval_results, size, best_proba)
-    return population, best_result, best_individual
-
 def test_population(population, r):
     for individual in population:
         for rectangle in individual:
@@ -406,38 +397,74 @@ def test_population(population, r):
                 plot_individual(r, individual)
                 return False
     return True
-    
-def run():
-    radius, available_rectangles = read_rectangles("data/cutting", "r800.csv")
-    size = 300
-    best_proba = 0.1
+
+def epoch(size: int, radius: float, available_rectangles: pd.DataFrame, best_result: float, best_individual: np.array, best_fraction: float, population: List[np.array]):
+    population = mutation(population, available_rectangles, radius)
+    population = crossbreeding(population, radius)
+    eval_results = evaluation(population)
+    best_index = np.argmax(eval_results)
+    if eval_results[best_index] > best_result:
+        best_result = eval_results[best_index]
+        best_individual = population[best_index]
+    population = selection(population, eval_results, size, best_fraction)
+    return population, best_result, best_individual
+
+def run(path: str, file_name: str, size: int, best_fraction: float, epochs: int):
+    radius, available_rectangles = read_rectangles(PATH, file_name)
     best_result = 0
     best_individual = None
-    epochs = 500
+    best_results = []
     population = initialize_population(size, available_rectangles, radius)
     for e in range(epochs):
-        population, best_result, best_individual = epoch(size, radius, available_rectangles, best_result, best_individual, best_proba, population)
+        population, best_result, best_individual = epoch(size, radius, available_rectangles, best_result, best_individual, best_fraction, population)
+        best_results.append(best_result)
+    # best
     plot_individual(radius, best_individual)
+    # worst
+    eval_results = evaluation(population)
+    worst_index = np.argmin(eval_results)
+    worst_result = eval_results[worst_index]
+    worst_individual = population[worst_index]
+    plot_individual(radius, worst_individual)
+    
+    # epochs
+    plt.plot(best_results)
+    plt.xlabel('epoch')
+    plt.ylabel('best result')
+    plt.show()
+    
     print(f'Best result: {best_result} ')
-    print(f'Number of rectangles : {len(best_individual)} ')
+    print(f'Number of rectangles in best result : {len(best_individual)} ')
+    print(f'Worst result: {worst_result} ')
+    print(f'Average result : {np.mean(eval_results)} ')
     
-#%%
+#%% 800
 
-run()
+file_name = "r800.csv"
 
-#%%
+run(PATH, file_name, size=300, best_fraction=0.1, epochs=500)
 
-radius, rectangles = read_rectangles("data/cutting", "r800.csv")
+#%% 850
 
-# individual = np.random.rand(10, 4)
-# plot_individual(1, individual)
+file_name = "r800.csv"
 
-# radius = 200
-# individual = randomly_insert_rectangle(rectangles.loc[1,:], np.array([]), radius, y_up=60, y_down=-180, x_left=-150, x_right=170)
-# plot_individual(radius, individual)
+run(PATH, file_name, size=200, best_fraction=0.1, epochs=200)
 
-population = initialize_population(3, rectangles, radius)
-for individual in population:
-    plot_individual(radius, individual)
-    
+#%% 1000
+
+file_name = "r1000.csv"
+
+run(PATH, file_name, size=100, best_fraction=0.1, epochs=100)
+
+#%% 1100
+
+file_name = "r1100.csv"
+
+run(PATH, file_name, size=100, best_fraction=0.1, epochs=100)
+
+#%% 1200
+
+file_name = "r1200.csv"
+
+run(PATH, file_name, size=200, best_fraction=0.1, epochs=200)
 
