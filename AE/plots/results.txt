@@ -1,0 +1,34 @@
+#800
+/30000 
+Best result: 40540.0 
+Number of rectangles in best result : 100 
+Worst result: 140.0 
+Average result : 13039.333333333334 
+
+#850
+/-
+ Best result: 387530.0 
+Number of rectangles in best result : 86 
+Worst result: 7110.0 
+Average result : 131132.5 
+
+#1000
+/17500 
+ Best result: 23460.0 
+Number of rectangles in best result : 75 
+Worst result: 2100.0 
+Average result : 9983.8 
+
+#1100
+/25000 
+ Best result: 34140.0 
+Number of rectangles in best result : 69 
+Worst result: 4340.0 
+Average result : 17204.2 
+
+#1200
+/30000 
+ Best result: 36000.0 
+Number of rectangles in best result : 106 
+Worst result: 4980.0 
+Average result : 18887.5 

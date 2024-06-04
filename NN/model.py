@@ -520,3 +520,12 @@ class Net:
         if layer_index == self.get_n_layers() - 1:
             return
         self.set_layer_weights(layer_index + 1, next_weights)
+        
+    def set_all_biases(self, biases):
+        for bias, layer in zip(biases, self.layers):
+            layer.set_bias(bias)
+    
+    def set_all_weights(self, weights):
+        for w, layer in zip(weights, self.layers):
+            layer.set_weights(w)
+            

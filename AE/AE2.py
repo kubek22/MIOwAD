@@ -446,7 +446,7 @@ run(PATH, file_name, size=300, best_fraction=0.1, epochs=500)
 
 #%% 850
 
-file_name = "r800.csv"
+file_name = "r850.csv"
 
 run(PATH, file_name, size=200, best_fraction=0.1, epochs=200)
 
