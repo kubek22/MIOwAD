@@ -193,7 +193,7 @@ y = le.transform(y)
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=42)
 
-run(epochs=10, size=10, n_neurons=[5, 5, 3], n_inputs=4, functions=['tanh', 'tanh', 'softmax'], best_fraction=0.2, 
+run(epochs=0, size=10, n_neurons=[5, 5, 3], n_inputs=4, functions=['tanh', 'tanh', 'softmax'], best_fraction=0.2, 
     x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test, use_softmax=True)
 
 #%% multimodal-large
@@ -210,7 +210,7 @@ df_test.head()
 x_test = df_test["x"]
 y_test = df_test["y"]
 
-run(epochs=3, size=10, n_neurons=[5, 5, 1], n_inputs=1, functions=['tanh', 'tanh', 'linear'], best_fraction=0.2, 
+run(epochs=0, size=10, n_neurons=[5, 5, 1], n_inputs=1, functions=['tanh', 'tanh', 'linear'], best_fraction=0.2, 
     x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
 
 #%%
@@ -221,13 +221,13 @@ x = auto_mpg.data.features.to_numpy()
 y = auto_mpg.data.targets 
 y = y.to_numpy().reshape(-1) 
 
-le = LabelEncoder()
-le.fit(y)
-le.classes_
-y = le.transform(y)
+idx = ~np.isnan(x).any(axis=1)
+
+x = x[idx]
+y = y[idx]
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=42)
 
-run(epochs=3, size=5, n_neurons=[5, 5, 3], n_inputs=4, functions=['tanh', 'tanh', 'softmax'], best_fraction=0.2, 
-    x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test, use_softmax=True)
+run(epochs=3, size=5, n_neurons=[5, 5, 1], n_inputs=7, functions=['tanh', 'tanh', 'linear'], best_fraction=0.2, 
+    x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test, use_softmax=False)
 
