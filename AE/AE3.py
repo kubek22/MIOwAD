@@ -18,7 +18,6 @@ import time
 def predict_class(predictions):
     classes = []
     for p in predictions:
-        # classes.append(np.where(np.max(p) == p)[0][0])
         classes.append(np.argmax(p))
     return np.array(classes).reshape(-1)
 
@@ -32,28 +31,27 @@ def initialize_population(size, n_neurons, n_inputs, functions, use_softmax):
         population.append(net)
     return population
 
-def mutation(population, mean=0, std_dev=1):
+def mutation(population, eval_results, mean=0, std_dev=1):
     for i in range(len(population)):
         net = population[i]
-        functions = net.get_all_functions()
         weights = net.get_all_weights()
         biases = net.get_all_biases()
         new_weights = []
+        if eval_results[i] < 1:
+            std_dev = std_dev * eval_results[i] ** 2
         for layer_weights in weights:
             n = layer_weights.shape[0] * layer_weights.shape[1]
             noise = np.random.normal(mean, std_dev, n)
             noise = noise.reshape(layer_weights.shape[0], layer_weights.shape[1])
             new_weights.append(layer_weights + noise)
         new_biases = []
+        std_dev = std_dev ** 2 if std_dev < 1 else np.sqrt(std_dev)
         for layer_biases in biases:
             n = len(layer_biases)
             noise = np.random.normal(mean, std_dev, n)
             new_biases.append(layer_biases + noise)
         net.set_all_weights(new_weights)
         net.set_all_biases(new_biases)
-        # use_softmax = net.use_softmax
-        # net = Net(new_weights, functions, new_biases, use_softmax=use_softmax)
-        # population[i] = net
     return population
 
 def crossbreeding(population):
@@ -63,8 +61,6 @@ def crossbreeding(population):
         j = np.random.choice(size)
         net_i = population[i]
         net_j = population[j]
-        functions = net_i.get_all_functions()
-        # weights
         for layer_idx in range(n_layers):
             w_i = net_i.get_layer_weights(layer_idx)
             w_j = net_j.get_layer_weights(layer_idx)
@@ -103,26 +99,20 @@ def crossbreeding(population):
             
         net_i.set_all_biases(new_biases_i)
         net_j.set_all_biases(new_biases_j)
-        
-        # weights_i = net_i.get_all_weights()
-        # weights_j = net_j.get_all_weights()
-        # use_softmax = net_i.use_softmax
-        # net_i = Net(weights_i, functions, biases_i, use_softmax=use_softmax)
-        # use_softmax = net_j.use_softmax
-        # net_j = Net(weights_j, functions, biases_j, use_softmax=use_softmax)
-        # population[i] = net_i
-        # population[j] = net_j
     return population
 
 def evaluation(population, x_train, y_train, x_test, y_test, classification):
     eval_results = []
     eval_test_results = []
+    acc = 0
+    test_acc = 0
     for net in population:
         predictions = []
         for x in x_train:
             predictions.append(net.predict(x))
         if classification:
             predictions = predict_class(predictions)
+            acc = np.sum(predictions == y_train) / len(y_train)
         mse = MSE(predictions, y_train)
         eval_results.append(mse)
         
@@ -131,13 +121,13 @@ def evaluation(population, x_train, y_train, x_test, y_test, classification):
             test_predictions.append(net.predict(x))
         if classification:
             test_predictions = predict_class(test_predictions)
+            test_acc = np.sum(test_predictions == y_test) / len(y_test)
         mse = MSE(test_predictions, y_test)
         eval_test_results.append(mse)
-    return eval_results, eval_test_results
+    return eval_results, eval_test_results, acc, test_acc
 
-def selection(population, eval_res, best_fraction):
+def selection(population, size, eval_res, best_fraction):
     order = np.argsort(eval_res)
-    size = len(population)
     best_number = min(int(size * best_fraction), size)
     random_number = size - best_number
     sorted_population = [population[order[i]] for i in range(len(order))]
@@ -148,35 +138,55 @@ def selection(population, eval_res, best_fraction):
         new_population.append(population[i])
     return new_population
 
-def epoch(population, best_fraction, x_train, y_train, x_test, y_test, classification):
-    population = mutation(population)
+def epoch(population, size, best_fraction, x_train, y_train, x_test, y_test, classification, eval_res):
+    population = mutation(population, eval_res)
     population = crossbreeding(population)
-    eval_res, eval_test_res = evaluation(population, x_train, y_train, x_test, y_test, classification)
-    new_population = selection(population, eval_res, best_fraction)
-    return new_population, eval_res, eval_test_res
+    eval_res, eval_test_res, acc, test_acc = evaluation(population, x_train, y_train, x_test, y_test, classification)
+    new_population = selection(population, size, eval_res, best_fraction)
+    return new_population, eval_res, eval_test_res, acc, test_acc
 
 def run(epochs, size, n_neurons, n_inputs, functions, best_fraction, x_train, y_train, x_test, y_test, use_softmax=False):
     classification = use_softmax
     population = initialize_population(size, n_neurons, n_inputs, functions, use_softmax)
     best_results = []
     best_test_results = []
+    accuracy = []
+    test_accuracy = []
+    eval_res = np.zeros(size)
     start_time = time.time()
     for e in range(epochs):
-        population, eval_res, eval_test_res = epoch(population, best_fraction, x_train, y_train, x_test, y_test, classification)
+        population, eval_res, eval_test_res, acc, test_acc = epoch(population, size, best_fraction, x_train, y_train, x_test, y_test, classification, eval_res)
         best_results.append(min(eval_res))
         best_test_results.append(min(eval_test_res))
+        accuracy.append(acc)
+        test_accuracy.append(test_acc)
         print(e)
         print(time.time() - start_time)
-    final_results, final_test_results = evaluation(population, x_train, y_train, x_test, y_test, classification)
+    final_results, final_test_results, _, _ = evaluation(population, x_train, y_train, x_test, y_test, classification)
     best_idx = np.argmin(final_results)
     best_net = population[best_idx]
     
     best_test_idx = np.argmin(final_test_results)
     best_test_net = population[best_idx]
     
+    print(f'Global best test MSE: {min(best_test_results)}')
+    if classification:
+        print(f'Global best test accuracy: {max(test_accuracy)}')
+    
     plt.plot(best_results)
     plt.plot(best_test_results)
+    plt.xlabel('epoch')
+    plt.ylabel('MSE')
+    plt.legend(('best result train', 'best result test'))
     plt.show()
+    
+    if classification:
+        plt.plot(accuracy)
+        plt.plot(test_accuracy)
+        plt.xlabel('epoch')
+        plt.ylabel('accuracy')
+        plt.legend(('best accuracy train', 'best accuracy test'))
+        plt.show()
     
 #%% iris
 
@@ -193,7 +203,7 @@ y = le.transform(y)
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=42)
 
-run(epochs=0, size=10, n_neurons=[5, 5, 3], n_inputs=4, functions=['tanh', 'tanh', 'softmax'], best_fraction=0.2, 
+run(epochs=1000, size=10, n_neurons=[5, 5, 3], n_inputs=4, functions=['tanh', 'tanh', 'softmax'], best_fraction=0.2, 
     x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test, use_softmax=True)
 
 #%% multimodal-large
@@ -210,7 +220,7 @@ df_test.head()
 x_test = df_test["x"]
 y_test = df_test["y"]
 
-run(epochs=0, size=10, n_neurons=[5, 5, 1], n_inputs=1, functions=['tanh', 'tanh', 'linear'], best_fraction=0.2, 
+run(epochs=100, size=10, n_neurons=[20, 20, 1], n_inputs=1, functions=['tanh', 'tanh', 'linear'], best_fraction=0.2, 
     x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
 
 #%%
@@ -228,6 +238,6 @@ y = y[idx]
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=42)
 
-run(epochs=3, size=5, n_neurons=[5, 5, 1], n_inputs=7, functions=['tanh', 'tanh', 'linear'], best_fraction=0.2, 
+run(epochs=20, size=100, n_neurons=[10, 10, 1], n_inputs=7, functions=['tanh', 'tanh', 'linear'], best_fraction=0.2, 
     x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test, use_softmax=False)
 
